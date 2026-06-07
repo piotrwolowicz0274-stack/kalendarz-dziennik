@@ -349,6 +349,119 @@
   }
   .pwa-install-bar .install:hover{background:var(--blue-soft)}
 
+  /* ===== GŁÓWNE ZAKŁADKI (Kalendarz / Notatki) ===== */
+  .main-tabs{display:flex;gap:8px;justify-content:center;margin-bottom:18px}
+  .main-tabs button{
+    flex:1;max-width:210px;min-height:48px;border:none;border-radius:12px;
+    background:var(--card);color:var(--muted);font-family:inherit;
+    font-size:.95rem;font-weight:700;cursor:pointer;box-shadow:var(--shadow);
+    transition:all .15s;display:flex;align-items:center;justify-content:center;gap:7px;
+  }
+  .main-tabs button.active{background:var(--blue);color:#fff}
+
+  /* ikona notatki na kafelku dnia */
+  .day-mic{margin-left:auto;font-size:.72rem;line-height:1;flex:0 0 auto}
+
+  /* ===== ZAKŁADKA NOTATKI ===== */
+  .notes-wrap{display:flex;flex-direction:column;gap:16px}
+  .notes-rec-card{
+    position:relative;background:var(--card);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:24px 18px 20px;
+    display:flex;flex-direction:column;align-items:center;gap:14px;
+  }
+  .notes-settings-btn{
+    position:absolute;top:12px;right:12px;width:38px;height:38px;border-radius:50%;
+    border:none;background:var(--inset);color:var(--muted);cursor:pointer;
+    font-size:1.1rem;display:flex;align-items:center;justify-content:center;transition:background .12s;
+  }
+  .notes-settings-btn:hover{background:var(--border-strong)}
+  .notes-settings-btn.has-key{color:var(--green);background:var(--green-soft)}
+  #recMicArea{display:flex;flex-direction:column;align-items:center;gap:8px}
+  .rec-btn{
+    width:104px;height:104px;border-radius:50%;border:none;cursor:pointer;
+    background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;
+    box-shadow:0 6px 22px rgba(0,122,255,.35);transition:background .15s,transform .1s;
+  }
+  .rec-btn:hover{background:var(--blue-hover)}
+  .rec-btn:active{transform:scale(.96)}
+  .rec-btn svg{width:46px;height:46px}
+  .rec-btn.recording{background:var(--red);animation:rec-pulse 1.3s ease-in-out infinite}
+  .rec-btn.disabled{opacity:.35;cursor:not-allowed}
+  @keyframes rec-pulse{
+    0%,100%{box-shadow:0 0 0 0 rgba(255,59,48,.5)}
+    50%{box-shadow:0 0 0 24px rgba(255,59,48,0)}
+  }
+  .rec-timer{font-size:1.5rem;font-weight:800;font-variant-numeric:tabular-nums;color:var(--red);display:none}
+  .rec-timer.show{display:block}
+  .rec-status{font-size:.9rem;font-weight:600;color:var(--muted);text-align:center;min-height:20px;padding:0 6px}
+  .rec-status.live{color:var(--red)}
+  .rec-status.warn{color:var(--red)}
+  .rec-transcript{
+    width:100%;background:var(--inset);border:1px solid var(--border);border-radius:12px;
+    padding:12px 14px;font-size:.9rem;min-height:54px;color:var(--text);line-height:1.55;
+    white-space:pre-wrap;word-break:break-word;
+  }
+  .rec-transcript.placeholder{color:var(--muted);font-style:italic}
+  .rec-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;width:100%}
+  .notes-fallback{width:100%}
+  .notes-fallback textarea{
+    width:100%;min-height:96px;padding:12px;border:1px solid var(--border-strong);
+    border-radius:12px;font-family:inherit;font-size:.9rem;resize:vertical;
+    background:var(--card);color:var(--text);
+  }
+  .notes-fallback textarea:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-soft)}
+  .btn.danger{background:var(--red)}
+  .btn.danger:hover{background:#d92c22}
+
+  /* skeleton loader */
+  .skeleton-card{
+    background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
+    padding:16px;display:flex;flex-direction:column;gap:11px;
+  }
+  .sk-line{height:13px;border-radius:7px;background:linear-gradient(90deg,var(--inset) 25%,var(--border) 37%,var(--inset) 63%);
+    background-size:400% 100%;animation:sk 1.4s ease infinite}
+  .sk-line.w40{width:40%}.sk-line.w70{width:70%}.sk-line.w90{width:90%}.sk-line.w55{width:55%}
+  @keyframes sk{0%{background-position:100% 50%}100%{background-position:0 50%}}
+
+  /* filtr kategorii */
+  .cat-filter{display:flex;gap:7px;flex-wrap:wrap}
+  .cat-filter button{
+    border:1.5px solid var(--border-strong);background:var(--card);color:var(--text);
+    padding:8px 13px;border-radius:20px;font-family:inherit;font-size:.8rem;font-weight:600;
+    cursor:pointer;min-height:40px;transition:all .12s;
+  }
+  .cat-filter button:hover{border-color:var(--blue)}
+  .cat-filter button.active{background:var(--blue);border-color:var(--blue);color:#fff}
+
+  /* karta notatki */
+  .notes-list{display:flex;flex-direction:column;gap:12px}
+  .note-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+  .note-head{padding:14px 16px;cursor:pointer;display:flex;flex-direction:column;gap:9px}
+  .note-title-row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+  .note-title{font-size:1.02rem;font-weight:700;line-height:1.3;flex:1}
+  .note-cat{font-size:.74rem;font-weight:700;white-space:nowrap;background:var(--inset);padding:5px 10px;border-radius:9px;flex:0 0 auto}
+  .note-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .note-date{font-size:.74rem;color:var(--muted)}
+  .note-chevron{font-size:.7rem;color:var(--muted);transition:transform .15s}
+  .note-card.expanded .note-chevron{transform:rotate(180deg)}
+  .note-summary{font-size:.86rem;color:var(--text);opacity:.85;line-height:1.45}
+  .note-tags{display:flex;gap:6px;flex-wrap:wrap}
+  .note-tag{font-size:.72rem;font-weight:600;color:var(--blue-hover);background:var(--blue-soft);padding:3px 9px;border-radius:7px}
+  .note-body{padding:0 16px 14px;display:none;flex-direction:column;gap:12px}
+  .note-card.expanded .note-body{display:flex}
+  .note-transcript-label{font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+  .note-transcript{background:var(--inset);border-radius:10px;padding:12px 14px;font-size:.88rem;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+  .note-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .notes-empty{text-align:center;color:var(--muted);padding:44px 16px;font-size:.9rem;line-height:1.6}
+
+  /* notatki w modalu dnia */
+  .modal-notes-section{margin-top:14px;border-top:1px solid var(--border);padding-top:14px}
+  .modal-notes-title{font-size:.74rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin-bottom:9px;display:flex;align-items:center;gap:6px}
+  .modal-note-item{background:var(--inset);border-radius:10px;padding:10px 13px;margin-bottom:8px}
+  .modal-note-item .mni-title{font-size:.9rem;font-weight:700}
+  .modal-note-item .mni-meta{font-size:.72rem;color:var(--muted);margin-top:2px}
+  .modal-note-item .mni-sum{font-size:.8rem;color:var(--text);opacity:.85;margin-top:5px;line-height:1.45}
+
   @media (max-width:680px){
     h1{font-size:1.2rem}
     .cal-title{font-size:1rem}
@@ -363,26 +476,60 @@
 <div class="app">
   <div class="app-header">
     <div class="app-title-tile">
-      <h1>Kalendarz</h1>
+      <h1 id="appTitle">Kalendarz</h1>
     </div>
   </div>
 
-  <div class="view-switch" id="viewSwitch">
-    <button data-mode="month">Miesiąc</button>
-    <button data-mode="week">Tydzień</button>
-    <button data-mode="day">Dzień</button>
+  <div class="main-tabs" id="mainTabs">
+    <button data-tab="calendar" class="active">📅 Kalendarz</button>
+    <button data-tab="notes">🎙️ Notatki</button>
   </div>
 
-  <div class="cal-header">
-    <button class="nav-btn" id="prevBtn" aria-label="Poprzedni">‹</button>
-    <div style="display:flex;align-items:center;gap:10px">
-      <span class="cal-title" id="calTitle"></span>
-      <button class="today-btn" id="todayBtn">Dziś</button>
+  <!-- ===== ZAKŁADKA: KALENDARZ ===== -->
+  <div id="calendarTab">
+    <div class="view-switch" id="viewSwitch">
+      <button data-mode="month">Miesiąc</button>
+      <button data-mode="week">Tydzień</button>
+      <button data-mode="day">Dzień</button>
     </div>
-    <button class="nav-btn" id="nextBtn" aria-label="Następny">›</button>
+
+    <div class="cal-header">
+      <button class="nav-btn" id="prevBtn" aria-label="Poprzedni">‹</button>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="cal-title" id="calTitle"></span>
+        <button class="today-btn" id="todayBtn">Dziś</button>
+      </div>
+      <button class="nav-btn" id="nextBtn" aria-label="Następny">›</button>
+    </div>
+
+    <div id="viewArea"></div>
   </div>
 
-  <div id="viewArea"></div>
+  <!-- ===== ZAKŁADKA: NOTATKI GŁOSOWE ===== -->
+  <div id="notesTab" style="display:none">
+    <div class="notes-wrap">
+      <div class="notes-rec-card">
+        <button class="notes-settings-btn" id="notesSettingsBtn" title="Klucz API Claude">⚙</button>
+        <div id="recMicArea">
+          <button class="rec-btn" id="recBtn" aria-label="Nagrywaj notatkę głosową">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </button>
+          <div class="rec-timer" id="recTimer">0:00</div>
+        </div>
+        <div class="rec-status" id="recStatus">Dotknij mikrofon i mów po polsku (30 s – 2 min)</div>
+        <div class="notes-fallback" id="notesFallback" style="display:none">
+          <textarea id="fallbackText" placeholder="Twoja przeglądarka nie obsługuje rozpoznawania mowy. Wpisz treść notatki tutaj…"></textarea>
+        </div>
+        <div class="rec-transcript placeholder" id="recTranscript">Tutaj pojawi się transkrypcja…</div>
+        <div class="rec-actions" id="recActions"></div>
+      </div>
+
+      <div id="notesProcessing"></div>
+
+      <div class="cat-filter" id="catFilter"></div>
+      <div class="notes-list" id="notesList"></div>
+    </div>
+  </div>
 </div>
 
 <!-- Modal wydarzeń dnia -->
@@ -395,6 +542,10 @@
       <button class="modal-close" id="modalClose" aria-label="Zamknij">×</button>
     </div>
     <div class="modal-event-list" id="modalEventList"></div>
+    <div class="modal-notes-section" id="modalNotesSection" style="display:none">
+      <div class="modal-notes-title">🎙️ Notatki głosowe</div>
+      <div id="modalNotesList"></div>
+    </div>
     <div class="modal-actions" style="margin-top:16px">
       <button class="btn" id="modalGoDay">Otwórz planer dnia</button>
     </div>
@@ -552,6 +703,420 @@ function parseActivityVoice(text){
 }
 
 /* ======================================================== */
+
+/* ========================================================
+   NOTATKI GŁOSOWE — moduł VN
+   Nagrywanie (Web Speech API) → analiza Claude → localStorage
+   Definiowany PRZED kalendarzem, bo kalendarz używa VN.forDate()
+   ======================================================== */
+const VN = (function(){
+  "use strict";
+
+  const STORE_KEY = "voice-notes-v1";
+  const APIKEY_KEY = "claude-api-key";
+  const MODEL = "claude-sonnet-4-20250514";
+  const MAX_REC_MS = 125000;            // bezpiecznik ~2 min
+  const CATEGORIES = [
+    "📋 Zadania","📅 Spotkania","📈 Trading",
+    "🏛️ Samorząd","💡 Pomysły","🛒 Do zrobienia","📝 Inne"
+  ];
+
+  /* ---- dane ---- */
+  function load(){ try{ return JSON.parse(localStorage.getItem(STORE_KEY)) || []; }catch(e){ return []; } }
+  function persist(){ localStorage.setItem(STORE_KEY, JSON.stringify(notes)); }
+  let notes = load();
+  let activeFilter = "all";
+
+  function getApiKey(){ return (localStorage.getItem(APIKEY_KEY) || "").trim(); }
+  function setApiKey(k){ k=(k||"").trim(); if(k) localStorage.setItem(APIKEY_KEY,k); else localStorage.removeItem(APIKEY_KEY); }
+
+  /* ---- daty ---- */
+  function pad(n){ return String(n).padStart(2,"0"); }
+  function dateKeyOf(d){ return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
+  const MONTHS_SHORT=["sty","lut","mar","kwi","maj","cze","lip","sie","wrz","paź","lis","gru"];
+  function fmtDateTime(iso){
+    const d=new Date(iso);
+    return d.getDate()+" "+MONTHS_SHORT[d.getMonth()]+" "+d.getFullYear()+", "+pad(d.getHours())+":"+pad(d.getMinutes());
+  }
+
+  /* ---- util ---- */
+  function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+  function forDate(key){ return notes.filter(n=>n.linkedDate===key); }
+
+  /* ---- elementy DOM (przypisane w init) ---- */
+  let elBtn, elTimer, elStatus, elTranscript, elActions, elMicArea, elFallback,
+      elFallbackText, elProcessing, elFilter, elList, elSettings;
+
+  /* ========== ROZPOZNAWANIE MOWY ========== */
+  const voiceN = new VoiceInput("pl-PL");
+  let recording=false, processing=false, recBuffer="", lastInterim="", recStart=0, timerInt=null;
+
+  function setStatus(txt, cls){
+    if(!elStatus) return;
+    elStatus.textContent=txt;
+    elStatus.className="rec-status"+(cls?" "+cls:"");
+  }
+  function showTranscript(txt){
+    if(!elTranscript) return;
+    if(txt){ elTranscript.textContent=txt; elTranscript.classList.remove("placeholder"); }
+    else { elTranscript.textContent="Tutaj pojawi się transkrypcja…"; elTranscript.classList.add("placeholder"); }
+  }
+  function updateTimer(){
+    if(!elTimer) return;
+    const s=Math.floor((Date.now()-recStart)/1000);
+    elTimer.textContent=Math.floor(s/60)+":"+pad(s%60);
+  }
+
+  function startRec(){
+    if(recording || processing) return;
+    recording=true; finalizing=false; recBuffer=""; lastInterim=""; recStart=Date.now();
+    elBtn.classList.add("recording");
+    elTimer.classList.add("show"); updateTimer();
+    timerInt=setInterval(()=>{ updateTimer(); if(Date.now()-recStart>=MAX_REC_MS) stopRec(); },500);
+    setStatus("🎤 Słucham… mów teraz", "live");
+    showTranscript("");
+    listenLoop();
+  }
+
+  function listenLoop(){
+    voiceN.listen({
+      continuous:true,
+      onInterim:t=>{ lastInterim=t; showTranscript((recBuffer+" "+t).trim()); },
+      onFinal:t=>{ recBuffer=(recBuffer+" "+t).trim(); lastInterim=""; showTranscript(recBuffer); },
+      onEnd:()=>{
+        if(recording){
+          // przeglądarka kończy po ciszy — wznów, by obsłużyć dłuższe nagrania
+          if(Date.now()-recStart < MAX_REC_MS){ try{ listenLoop(); }catch(e){ finalizeRec(); } }
+          else stopRec();
+        }
+      },
+      onError:msg=>{
+        if(/dostępu do mikrofonu|nie obsługuje/i.test(msg)){
+          recording=false; cleanupRecUI();
+          setStatus("⚠ "+msg, "warn");
+        }
+        // inne błędy (np. brak mowy) — pętla onEnd wznowi nasłuch
+      }
+    });
+  }
+
+  function cleanupRecUI(){
+    elBtn.classList.remove("recording");
+    elTimer.classList.remove("show");
+    if(timerInt){ clearInterval(timerInt); timerInt=null; }
+  }
+
+  function stopRec(){
+    if(!recording) return;
+    recording=false;
+    cleanupRecUI();
+    try{ voiceN.stop(); }catch(e){}
+    finalizeRec();
+  }
+
+  let finalizing=false;
+  function finalizeRec(){
+    if(finalizing) return; finalizing=true;
+    const transcript=(recBuffer+" "+lastInterim).trim();
+    recBuffer=""; lastInterim="";
+    if(!transcript){
+      setStatus("Nie wykryto mowy. Spróbuj ponownie.","warn");
+      finalizing=false; return;
+    }
+    processNote(transcript).finally(()=>{ finalizing=false; });
+  }
+
+  /* ========== ANALIZA CLAUDE ========== */
+  function buildPrompt(transcript){
+    return "Jesteś asystentem porządkującym osobiste notatki głosowe. "+
+      "Otrzymasz transkrypcję notatki nagranej po polsku.\n\n"+
+      "Zwróć WYŁĄCZNIE poprawny obiekt JSON (bez markdown, bez komentarzy, bez dodatkowego tekstu) w formacie:\n"+
+      '{"title":"...","summary":"...","category":"...","tags":["...","..."]}\n\n'+
+      "Zasady:\n"+
+      "- \"title\": krótki tytuł notatki, maksymalnie 8 słów, po polsku.\n"+
+      "- \"summary\": podsumowanie w 2-3 zdaniach, po polsku.\n"+
+      "- \"category\": DOKŁADNIE jedna wartość z tej listy (skopiuj wraz z emoji): "+
+        CATEGORIES.join(", ")+".\n"+
+      "- \"tags\": tablica 3-5 tagów, małe litery, po polsku, bez znaku #.\n\n"+
+      "Transkrypcja notatki:\n\"\"\"\n"+transcript+"\n\"\"\"";
+  }
+
+  function parseClaudeJson(text){
+    let t=String(text||"").trim();
+    t=t.replace(/^```(?:json)?\s*/i,"").replace(/\s*```$/,"");      // usuń ewentualne ogrodzenie
+    const a=t.indexOf("{"), b=t.lastIndexOf("}");
+    if(a!==-1 && b!==-1 && b>a) t=t.slice(a,b+1);
+    const obj=JSON.parse(t);
+    return normalizeMeta(obj);
+  }
+
+  function normalizeMeta(o){
+    o=o||{};
+    let category = CATEGORIES.includes(o.category) ? o.category : null;
+    if(!category){
+      // dopasuj po nazwie bez emoji
+      const lc=String(o.category||"").toLowerCase();
+      category = CATEGORIES.find(c=>lc && c.toLowerCase().includes(lc.replace(/[^\p{L}\s]/gu,"").trim())) || "📝 Inne";
+    }
+    let tags = Array.isArray(o.tags) ? o.tags.map(t=>String(t).toLowerCase().replace(/^#/,"").trim()).filter(Boolean).slice(0,5) : [];
+    return {
+      title: String(o.title||"").trim().split(/\s+/).slice(0,8).join(" ") || "Notatka głosowa",
+      summary: String(o.summary||"").trim() || "(brak podsumowania)",
+      category,
+      tags
+    };
+  }
+
+  function buildFallbackMeta(transcript){
+    const words=transcript.split(/\s+/);
+    const title=(words.slice(0,6).join(" ")||"Notatka głosowa");
+    const firstSentence=(transcript.split(/(?<=[.!?])\s/)[0]||transcript).slice(0,180);
+    return {
+      title: title.charAt(0).toUpperCase()+title.slice(1),
+      summary: firstSentence + (transcript.length>180?"…":""),
+      category:"📝 Inne",
+      tags:[]
+    };
+  }
+
+  async function callClaude(transcript){
+    const apiKey=getApiKey();
+    if(!apiKey){ const e=new Error("NO_KEY"); e.code="NO_KEY"; throw e; }
+    const resp=await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",
+      headers:{
+        "content-type":"application/json",
+        "x-api-key":apiKey,
+        "anthropic-version":"2023-06-01",
+        "anthropic-dangerous-direct-browser-access":"true"
+      },
+      body:JSON.stringify({
+        model:MODEL,
+        max_tokens:1024,
+        messages:[{ role:"user", content:buildPrompt(transcript) }]
+      })
+    });
+    if(!resp.ok){
+      let detail=""; try{ detail=(await resp.json()).error?.message||""; }catch(e){}
+      throw new Error("HTTP "+resp.status+(detail?": "+detail:""));
+    }
+    const data=await resp.json();
+    const text=(data.content||[]).map(b=>b.text||"").join("");
+    return parseClaudeJson(text);
+  }
+
+  /* ========== PRZETWARZANIE I ZAPIS ========== */
+  function showSkeleton(on){
+    if(!elProcessing) return;
+    elProcessing.innerHTML = on ? `
+      <div class="skeleton-card">
+        <div class="sk-line w55"></div>
+        <div class="sk-line w90"></div>
+        <div class="sk-line w70"></div>
+        <div class="sk-line w40"></div>
+      </div>` : "";
+  }
+
+  async function processNote(transcript){
+    processing=true;
+    showTranscript(transcript);
+    setStatus("✨ Analizuję notatkę przez Claude…");
+    elBtn.classList.add("disabled");
+    showSkeleton(true);
+
+    let meta, warn=null;
+    try{
+      meta=await callClaude(transcript);
+    }catch(err){
+      meta=buildFallbackMeta(transcript);
+      warn = err.code==="NO_KEY"
+        ? "Brak klucza API — zapisano bez analizy AI. Kliknij ⚙ aby dodać klucz Claude."
+        : "Claude nie odpowiedział — zapisano surową notatkę. ("+String(err.message).slice(0,90)+")";
+    }
+
+    const now=new Date();
+    const note={
+      id: Date.now()+"-"+Math.random().toString(36).slice(2,7),
+      date: now.toISOString(),
+      audioTranscript: transcript,
+      title: meta.title,
+      summary: meta.summary,
+      category: meta.category,
+      tags: meta.tags,
+      linkedDate: dateKeyOf(now)
+    };
+    notes.unshift(note);
+    persist();
+
+    showSkeleton(false);
+    processing=false;
+    elBtn.classList.remove("disabled");
+    showTranscript("");
+    setStatus(warn ? "⚠ "+warn : "✅ Notatka zapisana: „"+note.title+"”", warn?"warn":null);
+    renderFilter(); renderList();
+    if(window.refreshCalendar) window.refreshCalendar();
+  }
+
+  /* ========== WIDOK LISTY ========== */
+  function renderFilter(){
+    if(!elFilter) return;
+    const counts={}; notes.forEach(n=>counts[n.category]=(counts[n.category]||0)+1);
+    let html=`<button data-f="all" class="${activeFilter==="all"?"active":""}">Wszystkie (${notes.length})</button>`;
+    CATEGORIES.forEach(c=>{
+      const cnt=counts[c]||0;
+      html+=`<button data-f="${esc(c)}" class="${activeFilter===c?"active":""}">${esc(c)}${cnt?" ("+cnt+")":""}</button>`;
+    });
+    elFilter.innerHTML=html;
+    elFilter.querySelectorAll("button").forEach(b=>{
+      b.addEventListener("click",()=>{ activeFilter=b.dataset.f; renderFilter(); renderList(); });
+    });
+  }
+
+  function noteCardHtml(n){
+    const tags=(n.tags||[]).map(t=>`<span class="note-tag">#${esc(t)}</span>`).join("");
+    return `<div class="note-card" data-id="${esc(n.id)}">
+      <div class="note-head" data-toggle="1">
+        <div class="note-title-row">
+          <span class="note-title">${esc(n.title)}</span>
+          <span class="note-cat">${esc(n.category)}</span>
+        </div>
+        <div class="note-meta">
+          <span class="note-date">🕐 ${esc(fmtDateTime(n.date))}</span>
+          <span class="note-chevron">▼</span>
+        </div>
+        ${tags?`<div class="note-tags">${tags}</div>`:""}
+        <div class="note-summary">${esc(n.summary)}</div>
+      </div>
+      <div class="note-body">
+        <div>
+          <div class="note-transcript-label">Pełna transkrypcja</div>
+          <div class="note-transcript">${esc(n.audioTranscript)}</div>
+        </div>
+        <div class="note-actions">
+          <button class="btn ghost small" data-act="copy">📋 Kopiuj tekst</button>
+          <button class="btn danger small" data-act="delete">🗑 Usuń</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function renderList(){
+    if(!elList) return;
+    if(!notes.length){
+      elList.innerHTML=`<div class="notes-empty">Brak notatek.<br>Nagraj swoją pierwszą notatkę głosową! 🎙️</div>`;
+      return;
+    }
+    const list = activeFilter==="all" ? notes : notes.filter(n=>n.category===activeFilter);
+    if(!list.length){
+      elList.innerHTML=`<div class="notes-empty">Brak notatek w kategorii ${esc(activeFilter)}.</div>`;
+      return;
+    }
+    elList.innerHTML=list.map(noteCardHtml).join("");
+
+    elList.querySelectorAll(".note-card").forEach(card=>{
+      const id=card.dataset.id;
+      card.querySelector("[data-toggle]").addEventListener("click",()=>card.classList.toggle("expanded"));
+      card.querySelector('[data-act="copy"]').addEventListener("click",ev=>{
+        ev.stopPropagation();
+        const note=notes.find(n=>n.id===id); if(!note) return;
+        copyText(note.audioTranscript, ev.currentTarget);
+      });
+      card.querySelector('[data-act="delete"]').addEventListener("click",ev=>{
+        ev.stopPropagation();
+        const note=notes.find(n=>n.id===id); if(!note) return;
+        if(confirm("Usunąć notatkę „"+note.title+"”?")){
+          notes=notes.filter(n=>n.id!==id); persist();
+          renderFilter(); renderList();
+          if(window.refreshCalendar) window.refreshCalendar();
+        }
+      });
+    });
+  }
+
+  function copyText(text, btn){
+    const done=()=>{ if(btn){ const o=btn.textContent; btn.textContent="✓ Skopiowano"; setTimeout(()=>btn.textContent=o,1500); } };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(done).catch(()=>fallbackCopy(text,done));
+    } else fallbackCopy(text,done);
+  }
+  function fallbackCopy(text,done){
+    const ta=document.createElement("textarea"); ta.value=text;
+    ta.style.position="fixed"; ta.style.opacity="0"; document.body.appendChild(ta);
+    ta.select(); try{ document.execCommand("copy"); done&&done(); }catch(e){}
+    document.body.removeChild(ta);
+  }
+
+  /* ========== USTAWIENIA (klucz API) ========== */
+  function refreshSettingsBadge(){
+    if(elSettings) elSettings.classList.toggle("has-key", !!getApiKey());
+  }
+  function promptApiKey(){
+    const cur=getApiKey();
+    const k=prompt(
+      "Wklej swój klucz API Anthropic (zaczyna się od „sk-ant-…”).\n"+
+      "Klucz zapisywany jest WYŁĄCZNIE lokalnie na tym urządzeniu i używany do analizy notatek.\n"+
+      "Zostaw puste i zatwierdź, aby usunąć zapisany klucz.",
+      cur
+    );
+    if(k===null) return;
+    setApiKey(k);
+    refreshSettingsBadge();
+    setStatus(getApiKey() ? "🔑 Klucz API zapisany." : "Klucz API usunięty.");
+  }
+
+  /* ========== TRYB ZAPASOWY (brak Web Speech) ========== */
+  function setupFallback(){
+    elMicArea.style.display="none";
+    elFallback.style.display="block";
+    setStatus("Tryb tekstowy — wpisz notatkę i kliknij „Przetwórz”.");
+    elActions.innerHTML=`<button class="btn" id="fbProcess">✨ Przetwórz notatkę</button>`;
+    document.getElementById("fbProcess").addEventListener("click",()=>{
+      const txt=(elFallbackText.value||"").trim();
+      if(!txt){ setStatus("Wpisz najpierw treść notatki.","warn"); return; }
+      elFallbackText.value="";
+      processNote(txt);
+    });
+  }
+
+  /* ========== INIT ========== */
+  let inited=false;
+  function init(){
+    if(inited) return; inited=true;
+    elBtn=document.getElementById("recBtn");
+    elTimer=document.getElementById("recTimer");
+    elStatus=document.getElementById("recStatus");
+    elTranscript=document.getElementById("recTranscript");
+    elActions=document.getElementById("recActions");
+    elMicArea=document.getElementById("recMicArea");
+    elFallback=document.getElementById("notesFallback");
+    elFallbackText=document.getElementById("fallbackText");
+    elProcessing=document.getElementById("notesProcessing");
+    elFilter=document.getElementById("catFilter");
+    elList=document.getElementById("notesList");
+    elSettings=document.getElementById("notesSettingsBtn");
+
+    elSettings.addEventListener("click",promptApiKey);
+    refreshSettingsBadge();
+
+    if(voiceN.supported){
+      elBtn.addEventListener("click",()=>{ recording ? stopRec() : startRec(); });
+    } else {
+      setupFallback();
+    }
+
+    renderFilter(); renderList();
+  }
+
+  return {
+    init,
+    forDate,
+    list:()=>notes,
+    categoriesOf:()=>CATEGORIES,
+    refreshList:()=>{ renderFilter(); renderList(); },
+    escForCalendar:esc,
+    fmtDateTime
+  };
+})();
 
 (function(){
   "use strict";
@@ -720,7 +1285,9 @@ function parseActivityVoice(text){
       if(key===selectedKey) cls+=" selected";
       if(isRedDay(key)) cls+=" red-day";
 
-      let inner='<div class="day-num"><span class="day-num-inner">'+d+'</span></div>';
+      const noteCount=VN.forDate(key).length;
+      const micIco=noteCount?'<span class="day-mic" title="'+noteCount+' notatka(-i) głosowa(-e)">🎙️</span>':'';
+      let inner='<div class="day-num"><span class="day-num-inner">'+d+'</span>'+micIco+'</div>';
       if(acts.length){
         inner+='<div class="day-events">';
         acts.slice(0,3).forEach(a=>inner+=chip(a,false,key));
@@ -1013,9 +1580,24 @@ function parseActivityVoice(text){
     const goDayBtn = document.getElementById('modalGoDay');
     const dateEl   = document.getElementById('modalDate');
     const listEl   = document.getElementById('modalEventList');
+    const notesSec = document.getElementById('modalNotesSection');
+    const notesEl  = document.getElementById('modalNotesList');
     let _key = null;
 
+    function buildNotes(){
+      const ns = VN.forDate(_key);
+      if(!ns.length){ notesSec.style.display='none'; notesEl.innerHTML=''; return; }
+      notesSec.style.display='block';
+      notesEl.innerHTML = ns.map(n=>`
+        <div class="modal-note-item">
+          <div class="mni-title">${VN.escForCalendar(n.title)}</div>
+          <div class="mni-meta">${VN.escForCalendar(n.category)} · ${VN.escForCalendar(VN.fmtDateTime(n.date))}</div>
+          <div class="mni-sum">${VN.escForCalendar(n.summary)}</div>
+        </div>`).join('');
+    }
+
     function buildList(){
+      buildNotes();
       const acts = sortedActs(_key);
       if(!acts.length){
         listEl.innerHTML='<div class="modal-empty">Brak wydarzeń w tym dniu</div>';
@@ -1052,7 +1634,8 @@ function parseActivityVoice(text){
 
     window.openDayModal = function(key){
       const acts = sortedActs(key);
-      if(!acts.length){ openDay(key); return; } // brak wydarzeń → otwórz planer
+      const hasNotes = VN.forDate(key).length>0;
+      if(!acts.length && !hasNotes){ openDay(key); return; } // pusto → otwórz planer
       _key = key;
       dateEl.textContent = longDate(key);
       buildList();
@@ -1101,10 +1684,34 @@ function parseActivityVoice(text){
 
   /* ====== START ====== */
 
+  // udostępnij odświeżanie kalendarza modułowi notatek (ikona 🎙️)
+  window.refreshCalendar = render;
+
   // Obsługa skrótu ?view=today z manifest.json shortcuts
   if(new URLSearchParams(location.search).get('view')==='today'){
     viewDate=new Date(); selectedKey=todayKey(); viewMode='day';
   }
+
+  /* ====== GŁÓWNE ZAKŁADKI: KALENDARZ / NOTATKI ====== */
+  (function initMainTabs(){
+    const tabs=document.getElementById("mainTabs");
+    const calEl=document.getElementById("calendarTab");
+    const notesEl=document.getElementById("notesTab");
+    const titleEl=document.getElementById("appTitle");
+    VN.init();
+    tabs.addEventListener("click",e=>{
+      const b=e.target.closest("button[data-tab]"); if(!b) return;
+      const tab=b.dataset.tab;
+      [...tabs.children].forEach(x=>x.classList.toggle("active",x===b));
+      const isNotes = tab==="notes";
+      calEl.style.display   = isNotes ? "none" : "";
+      notesEl.style.display = isNotes ? "" : "none";
+      titleEl.textContent   = isNotes ? "Notatki" : "Kalendarz";
+      if(isNotes) VN.refreshList();
+      else render();
+      window.scrollTo({top:0,behavior:"smooth"});
+    });
+  })();
 
   render();
   scheduleNotifications();
