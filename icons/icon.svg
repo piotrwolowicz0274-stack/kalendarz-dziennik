@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- tło aplikacji (salmon) — wypełnione do rogów = działa jako maskable -->
+  <rect width="512" height="512" fill="#f1745a"/>
+  <!-- karta kalendarza -->
+  <rect x="64" y="104" width="384" height="356" rx="36" fill="#ffffff" opacity="0.97"/>
+  <!-- nagłówek teal -->
+  <rect x="64" y="104" width="384" height="116" rx="36" fill="#159b8a"/>
+  <rect x="64" y="184" width="384" height="36" fill="#159b8a"/>
+  <!-- tytuł miesiąca -->
+  <text x="256" y="167" font-family="Arial,sans-serif" font-size="52" font-weight="800"
+        fill="white" text-anchor="middle" dominant-baseline="middle">KAL</text>
+  <!-- haczyki / bindowniki -->
+  <rect x="168" y="62" width="30" height="84" rx="15" fill="white" opacity="0.9"/>
+  <rect x="314" y="62" width="30" height="84" rx="15" fill="white" opacity="0.9"/>
+  <!-- kratka dni — rząd 1 -->
+  <rect x="92"  y="254" width="56" height="48" rx="12" fill="#fde9e2"/>
+  <rect x="164" y="254" width="56" height="48" rx="12" fill="#fde9e2"/>
+  <rect x="236" y="254" width="56" height="48" rx="12" fill="#f1745a"/>
+  <rect x="308" y="254" width="56" height="48" rx="12" fill="#fde9e2"/>
+  <rect x="364" y="254" width="84" height="48" rx="12" fill="#fde9e2"/>
+  <!-- kratka dni — rząd 2 -->
+  <rect x="92"  y="316" width="56" height="48" rx="12" fill="#fde9e2"/>
+  <rect x="164" y="316" width="56" height="48" rx="12" fill="#159b8a"/>
+  <rect x="236" y="316" width="128" height="48" rx="12" fill="#fde9e2"/>
+  <rect x="380" y="316" width="68" height="48" rx="12" fill="#f59e0b"/>
+  <!-- kratka dni — rząd 3 -->
+  <rect x="92"  y="378" width="136" height="48" rx="12" fill="#fde9e2"/>
+  <rect x="244" y="378" width="56" height="48" rx="12" fill="#8b5cf6"/>
+  <rect x="316" y="378" width="56" height="48" rx="12" fill="#fde9e2"/>
+  <rect x="388" y="378" width="60" height="48" rx="12" fill="#fde9e2"/>
+</svg>

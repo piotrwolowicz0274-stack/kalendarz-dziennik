@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Kalendarz-Dziennik</title>
+
+<!-- PWA -->
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#f1745a">
+<meta name="mobile-web-app-capable" content="yes">
+<!-- iOS Safari -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Dziennik">
+<link rel="apple-touch-icon" href="./icons/icon.svg">
+
+<!-- Czcionki -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* akcenty */
+    --accent:#f1745a;          /* łosoś — akcent główny (oszczędnie) */
+    --accent-soft:#ffe2d8;
+    --accent-hover:#e25c41;
+    --teal:#159b8a;            /* morski — drugi pasujący kolor */
+    --teal-soft:#d3efeb;
+    --teal-hover:#0e8273;
+    /* tła — mało łososiu, dużo jasnego */
+    --bg:#fbf5f1;              /* jasny kremowy z nutą łososiu */
+    --card:#ffffff;            /* białe karty */
+    --inset:#f8efe9;           /* pola wewnątrz kart */
+    --text:#0a0a0a;            /* czarna czcionka */
+    --muted:#262626;           /* dawniej szary — teraz prawie czarny */
+    --border:#ecd5c9;
+    --border-strong:#d9b6a4;
+    --shadow:0 2px 6px rgba(120,60,40,.08),0 10px 28px rgba(120,60,40,.08);
+    --radius:16px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:"Nunito","Segoe UI Rounded","SF Pro Rounded",ui-rounded,"Comic Sans MS",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    line-height:1.5;
+    font-weight:600;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{max-width:1100px;margin:0 auto;padding:24px 16px 60px}
+  h1{font-size:1.6rem;font-weight:800;text-align:center;margin-bottom:4px}
+  .subtitle{text-align:center;color:var(--muted);font-size:.9rem;margin-bottom:20px}
+
+  /* ===== PRZEŁĄCZNIK WIDOKU ===== */
+  .view-switch{
+    display:flex;gap:6px;justify-content:center;margin-bottom:16px;
+    background:var(--card);border:2px solid var(--border);border-radius:14px;
+    padding:5px;width:fit-content;margin-left:auto;margin-right:auto;box-shadow:var(--shadow);
+  }
+  .view-switch button{
+    border:none;background:transparent;color:var(--text);
+    padding:8px 20px;border-radius:10px;cursor:pointer;
+    font-size:.9rem;font-weight:700;font-family:inherit;transition:all .15s;
+  }
+  .view-switch button:hover{background:var(--inset)}
+  .view-switch button.active{background:var(--teal);color:#fff}
+
+  /* ===== NAGŁÓWEK NAWIGACJI ===== */
+  .cal-header{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:16px;gap:12px;
+  }
+  .cal-title{font-size:1.2rem;font-weight:800;text-transform:capitalize;text-align:center;line-height:1.2}
+  .cal-title small{display:block;font-size:.72rem;font-weight:700;color:var(--muted);text-transform:none}
+  .nav-btn{
+    border:2px solid var(--border-strong);
+    background:var(--card);
+    width:42px;height:42px;border-radius:12px;
+    font-size:1.2rem;cursor:pointer;color:var(--text);
+    display:flex;align-items:center;justify-content:center;
+    transition:all .15s;flex:0 0 auto;
+  }
+  .nav-btn:hover{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+  .today-btn{
+    border:2px solid var(--border-strong);background:var(--card);
+    padding:0 14px;height:42px;border-radius:12px;cursor:pointer;
+    font-size:.85rem;font-weight:700;color:var(--text);transition:all .15s;font-family:inherit;
+  }
+  .today-btn:hover{background:var(--teal-soft);border-color:var(--teal);color:var(--teal-hover)}
+
+  /* ===== KARTA WIDOKU ===== */
+  .card{
+    background:var(--card);
+    border:2px solid var(--border);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:18px;
+  }
+
+  /* ===== MIESIĄC ===== */
+  .weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:8px}
+  .weekday{
+    text-align:center;font-size:.72rem;font-weight:800;
+    color:var(--muted);text-transform:uppercase;letter-spacing:.04em;padding:4px 0;
+  }
+  .days{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+  .day{
+    position:relative;min-height:92px;border-radius:12px;
+    border:2px solid var(--border);background:var(--inset);
+    padding:5px 5px 4px;cursor:pointer;transition:all .12s;user-select:none;
+    display:flex;flex-direction:column;gap:3px;overflow:hidden;
+  }
+  .day:hover{border-color:var(--accent);background:#fff}
+  .day.empty{background:transparent;border-color:transparent;cursor:default}
+  .day-num{font-size:.9rem;font-weight:800;display:flex;align-items:center;gap:4px}
+  .day.today .day-num{
+    color:#fff;background:var(--teal);border-radius:8px;
+    width:24px;height:24px;justify-content:center;
+  }
+  .day.selected{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+  .day-events{display:flex;flex-direction:column;gap:2px;overflow:hidden}
+
+  /* skróty wydarzeń (paski) */
+  .ev-chip{
+    font-size:.66rem;font-weight:700;line-height:1.25;
+    padding:2px 6px;border-radius:5px;color:#fff;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .ev-more{font-size:.62rem;font-weight:700;color:var(--muted);padding-left:3px}
+
+  /* ===== TYDZIEŃ ===== */
+  .week-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+  .week-day{
+    border:2px solid var(--border);border-radius:14px;background:var(--inset);
+    padding:12px;cursor:pointer;transition:all .12s;min-height:120px;
+    display:flex;flex-direction:column;gap:8px;
+  }
+  .week-day:hover{border-color:var(--accent);background:#fff}
+  .week-day.today{border-color:var(--teal);box-shadow:0 0 0 2px var(--teal-soft)}
+  .week-day-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+  .week-day-name{font-size:.78rem;font-weight:800;text-transform:uppercase;color:var(--muted)}
+  .week-day-num{font-size:1.3rem;font-weight:800}
+  .week-day.today .week-day-num{color:var(--teal)}
+  .week-events{display:flex;flex-direction:column;gap:4px}
+  .week-events .ev-chip{font-size:.74rem;padding:4px 8px;border-radius:7px}
+  .week-empty{font-size:.78rem;color:var(--muted);opacity:.7}
+
+  /* ===== WIDOK DNIA ===== */
+  .day-view{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .panel{
+    background:var(--card);border:2px solid var(--border);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:20px;display:flex;flex-direction:column;
+  }
+  .panel-head{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:16px;gap:10px;flex-wrap:wrap;
+  }
+  .panel-head h2{font-size:1.05rem;font-weight:800}
+  .panel-date{font-size:.82rem;color:var(--muted);text-transform:capitalize}
+  .btn{
+    border:none;background:var(--accent);color:#fff;
+    padding:9px 16px;border-radius:10px;cursor:pointer;
+    font-size:.85rem;font-weight:700;font-family:inherit;transition:background .15s;
+  }
+  .btn:hover{background:var(--accent-hover)}
+  .btn.teal{background:var(--teal)}
+  .btn.teal:hover{background:var(--teal-hover)}
+  .btn.ghost{background:var(--card);color:var(--accent);border:2px solid var(--accent)}
+  .btn.ghost:hover{background:var(--accent-soft)}
+  .btn.small{padding:6px 12px;font-size:.8rem}
+
+  /* ===== TIMELINE ===== */
+  .timeline{
+    position:relative;flex:1;min-height:420px;
+    border-left:2px solid var(--border);margin-left:46px;margin-top:6px;
+  }
+  .hour-row{position:relative;height:42px;}
+  .hour-label{position:absolute;left:-46px;top:-8px;width:40px;text-align:right;font-size:.7rem;font-weight:700;color:var(--muted)}
+  .hour-line{position:absolute;left:0;right:0;top:0;border-top:1px dashed var(--border)}
+  .activities-layer{position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none}
+  .activity-block{
+    position:absolute;left:6px;right:6px;border-radius:8px;
+    padding:5px 9px;color:#fff;font-size:.78rem;overflow:hidden;
+    pointer-events:auto;box-shadow:0 1px 4px rgba(0,0,0,.18);
+    display:flex;flex-direction:column;justify-content:flex-start;
+  }
+  .activity-block .act-name{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .activity-block .act-meta{font-size:.68rem;font-weight:600;opacity:.95;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .activity-block .act-del{
+    position:absolute;top:3px;right:4px;cursor:pointer;
+    background:rgba(0,0,0,.2);border-radius:50%;width:17px;height:17px;
+    display:flex;align-items:center;justify-content:center;font-size:.8rem;line-height:1;
+  }
+  .activity-block .act-del:hover{background:rgba(0,0,0,.45)}
+  .empty-hint{color:var(--muted);font-size:.85rem;text-align:center;padding:24px 10px}
+
+  /* ===== FORMULARZ ===== */
+  .form{background:var(--inset);border:2px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px}
+  .form.hidden{display:none}
+  .field{margin-bottom:12px}
+  .field label{display:block;font-size:.78rem;font-weight:800;color:var(--muted);margin-bottom:5px}
+  .field input,.field select{
+    width:100%;padding:9px 10px;border:2px solid var(--border-strong);
+    border-radius:9px;font-size:.9rem;font-weight:600;font-family:inherit;background:var(--card);color:var(--text);
+  }
+  .field input:focus,.field select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .duration-badge{display:inline-block;background:var(--teal-soft);color:var(--teal-hover);padding:5px 10px;border-radius:8px;font-size:.8rem;font-weight:800}
+  .colors{display:flex;gap:10px}
+  .color-opt{width:30px;height:30px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:transform .1s}
+  .color-opt:hover{transform:scale(1.12)}
+  .color-opt.active{border-color:var(--text);transform:scale(1.12)}
+  .form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}
+
+  /* ===== DZIENNIK ===== */
+  .diary-area{
+    flex:1;width:100%;min-height:300px;resize:vertical;
+    border:2px solid var(--border-strong);border-radius:12px;
+    padding:14px;font-size:.95rem;font-weight:600;font-family:inherit;line-height:1.6;
+    color:var(--text);background:var(--inset);
+  }
+  .diary-area:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-soft);background:#fff}
+  .diary-foot{display:flex;align-items:center;justify-content:space-between;margin-top:12px;gap:10px;flex-wrap:wrap}
+  .char-count{font-size:.78rem;font-weight:700;color:var(--muted)}
+  .saved-flash{font-size:.8rem;color:var(--teal-hover);font-weight:800;opacity:0;transition:opacity .3s}
+  .saved-flash.show{opacity:1}
+
+  /* ===== PRZYCISK INSTALACJI PWA ===== */
+  .pwa-install-bar{
+    position:fixed;bottom:0;left:0;right:0;z-index:999;
+    background:var(--teal);color:#fff;
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:14px 20px;
+    padding-bottom:calc(14px + env(safe-area-inset-bottom));
+    box-shadow:0 -4px 24px rgba(21,155,138,.3);
+    font-family:inherit;
+    transform:translateY(0);transition:transform .3s ease;
+  }
+  .pwa-install-bar.hidden{transform:translateY(120%)}
+  .pwa-install-bar-text{display:flex;align-items:center;gap:10px;font-size:.95rem;font-weight:700}
+  .pwa-install-bar-text svg{flex:0 0 32px}
+  .pwa-install-bar-actions{display:flex;gap:8px;flex:0 0 auto}
+  .pwa-install-bar .dismiss{
+    background:transparent;border:2px solid rgba(255,255,255,.5);
+    color:#fff;padding:8px 14px;border-radius:10px;cursor:pointer;
+    font-size:.82rem;font-weight:700;font-family:inherit;
+  }
+  .pwa-install-bar .install{
+    background:#fff;color:var(--teal);border:none;
+    padding:8px 18px;border-radius:10px;cursor:pointer;
+    font-size:.88rem;font-weight:800;font-family:inherit;
+    box-shadow:0 2px 8px rgba(0,0,0,.12);
+  }
+  .pwa-install-bar .install:hover{background:var(--teal-soft)}
+  .pwa-running-badge{
+    display:none;align-items:center;gap:6px;
+    background:var(--teal-soft);color:var(--teal-hover);
+    border-radius:20px;padding:4px 12px;font-size:.75rem;font-weight:800;
+    border:2px solid var(--teal);margin:0 auto 16px;width:fit-content;
+  }
+  .pwa-running-badge.show{display:flex}
+
+  @media (max-width:760px){
+    .day-view{grid-template-columns:1fr}
+    h1{font-size:1.35rem}
+    .cal-title{font-size:1.02rem}
+    .day{min-height:74px}
+    .days,.weekdays{gap:5px}
+    .ev-chip{font-size:.6rem;padding:1px 4px}
+    .app{padding-bottom:80px}   /* miejsce na pasek instalacji */
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>📅 Kalendarz-Dziennik</h1>
+  <p class="subtitle">Planuj aktywności i prowadź swój dziennik</p>
+  <!-- Widoczne gdy app działa ze skrótu na pulpicie -->
+  <div class="pwa-running-badge" id="pwaBadge">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+    Aplikacja zainstalowana
+  </div>
+
+  <div class="view-switch" id="viewSwitch">
+    <button data-mode="month">Miesiąc</button>
+    <button data-mode="week">Tydzień</button>
+    <button data-mode="day">Dzień</button>
+  </div>
+
+  <div class="cal-header">
+    <button class="nav-btn" id="prevBtn" aria-label="Poprzedni">‹</button>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span class="cal-title" id="calTitle"></span>
+      <button class="today-btn" id="todayBtn">Dziś</button>
+    </div>
+    <button class="nav-btn" id="nextBtn" aria-label="Następny">›</button>
+  </div>
+
+  <div id="viewArea"></div>
+</div>
+
+<!-- Pasek instalacji PWA (pojawia się automatycznie) -->
+<div class="pwa-install-bar hidden" id="pwaBar">
+  <div class="pwa-install-bar-text">
+    <svg viewBox="0 0 512 512" width="32" height="32" xmlns="http://www.w3.org/2000/svg">
+      <rect width="512" height="512" rx="80" fill="rgba(255,255,255,0.2)"/>
+      <rect x="96" y="130" width="320" height="280" rx="28" fill="white" opacity="0.9"/>
+      <rect x="96" y="130" width="320" height="90" rx="28" fill="rgba(255,255,255,0.4)"/>
+      <rect x="156" y="88" width="22" height="70" rx="11" fill="white"/>
+      <rect x="334" y="88" width="22" height="70" rx="11" fill="white"/>
+    </svg>
+    <span>Zainstaluj aplikację na telefonie</span>
+  </div>
+  <div class="pwa-install-bar-actions">
+    <button class="dismiss" id="pwaBarDismiss">Nie teraz</button>
+    <button class="install" id="pwaBarInstall">Zainstaluj</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ====== STAŁE ====== */
+  const MONTHS = ["Styczeń","Luty","Marzec","Kwiecień","Maj","Czerwiec","Lipiec","Sierpień","Wrzesień","Październik","Listopad","Grudzień"];
+  const MONTHS_GEN = ["stycznia","lutego","marca","kwietnia","maja","czerwca","lipca","sierpnia","września","października","listopada","grudnia"];
+  const WEEKDAYS = ["Pon","Wt","Śr","Czw","Pt","Sob","Nie"];
+  const WEEKDAYS_LONG = ["Poniedziałek","Wtorek","Środa","Czwartek","Piątek","Sobota","Niedziela"];
+  const CATEGORIES = ["Praca","Sport","Nauka","Spotkanie","Inne"];
+  const COLORS = ["#f1745a","#159b8a","#f59e0b","#6366f1","#8b5cf6"]; // łosoś, morski, bursztyn, indygo, fiolet
+
+  /* Opcje powiadomienia (wartość w minutach przed startem) */
+  const NOTIFY_OPTS = [
+    { v:"",     label:"Brak powiadomienia", short:"" },
+    { v:"1440", label:"24 godz. przed",     short:"24h" },
+    { v:"60",   label:"1 godz. przed",      short:"1h" },
+    { v:"10",   label:"10 min przed",       short:"10min" }
+  ];
+  function notifyShort(v){ const o=NOTIFY_OPTS.find(o=>o.v===String(v)); return o&&o.short?o.short:""; }
+  const DAY_START = 8, DAY_END = 20;          // godziny osi czasu
+  const HOUR_PX = 42;                          // wysokość 1h (zgodna z CSS)
+  const STORE_KEY = "kalendarz-dziennik-v1";
+
+  /* ====== STAN ====== */
+  let viewMode = "month";                      // "month" | "week" | "day"
+  let viewDate = new Date();                   // kursor nawigacji
+  let selectedKey = todayKey();                // wybrany dzień (dla widoku dnia)
+  let formColor = COLORS[0];
+
+  /* ====== DANE / localStorage ====== */
+  function loadData(){
+    try{ return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }
+    catch(e){ return {}; }
+  }
+  function saveData(){ localStorage.setItem(STORE_KEY, JSON.stringify(data)); }
+  let data = loadData();
+  // data[key] = { activities:[{id,name,cat,start,end,color,notify}], diary:"" }
+
+  function getDay(key){
+    if(!data[key]) data[key] = { activities:[], diary:"" };
+    return data[key];
+  }
+
+  /* ====== POMOCNICZE DATY ====== */
+  function pad(n){ return String(n).padStart(2,"0"); }
+  function keyOf(y,m,d){ return y+"-"+pad(m+1)+"-"+pad(d); }
+  function keyOfDate(dt){ return keyOf(dt.getFullYear(), dt.getMonth(), dt.getDate()); }
+  function todayKey(){ const t=new Date(); return keyOf(t.getFullYear(),t.getMonth(),t.getDate()); }
+  function parseKey(key){ const [y,m,d]=key.split("-").map(Number); return new Date(y,m-1,d); }
+  function minutesOf(hhmm){ const [h,m]=hhmm.split(":").map(Number); return h*60+m; }
+  function fmtDuration(s,e){
+    let diff=e-s; if(diff<0) diff+=24*60;
+    const h=Math.floor(diff/60), m=diff%60;
+    if(h&&m) return h+"h "+m+"min";
+    if(h) return h+"h";
+    return m+"min";
+  }
+  function longDate(key){
+    const dt=parseKey(key);
+    const wd=WEEKDAYS_LONG[(dt.getDay()+6)%7];
+    return wd+", "+dt.getDate()+" "+MONTHS_GEN[dt.getMonth()]+" "+dt.getFullYear();
+  }
+  function weekStart(dt){
+    const d=new Date(dt); const off=(d.getDay()+6)%7;
+    d.setDate(d.getDate()-off); d.setHours(0,0,0,0); return d;
+  }
+  function weekNumber(dt){
+    const d=new Date(Date.UTC(dt.getFullYear(),dt.getMonth(),dt.getDate()));
+    const day=(d.getUTCDay()+6)%7; d.setUTCDate(d.getUTCDate()-day+3);
+    const firstThu=new Date(Date.UTC(d.getUTCFullYear(),0,4));
+    const firstDay=(firstThu.getUTCDay()+6)%7; firstThu.setUTCDate(firstThu.getUTCDate()-firstDay+3);
+    return 1+Math.round((d-firstThu)/(7*24*3600*1000));
+  }
+
+  /* ====== SKRÓTY WYDARZEŃ ====== */
+  function sortedActs(key){
+    const d=data[key];
+    if(!d||!d.activities) return [];
+    return d.activities.slice().sort((a,b)=>minutesOf(a.start)-minutesOf(b.start));
+  }
+  function chip(act,withTime){
+    const label = withTime ? act.start+" "+act.name : act.name;
+    return '<div class="ev-chip" style="background:'+act.color+'" title="'+
+           escapeHtml(act.start+"–"+act.end+" "+act.name)+'">'+escapeHtml(label)+'</div>';
+  }
+
+  /* ====== ROUTER WIDOKU ====== */
+  function render(){
+    [...document.getElementById("viewSwitch").children].forEach(b=>{
+      b.classList.toggle("active", b.dataset.mode===viewMode);
+    });
+    renderTitle();
+    const area=document.getElementById("viewArea");
+    if(viewMode==="month") renderMonth(area);
+    else if(viewMode==="week") renderWeek(area);
+    else renderDay(area);
+  }
+
+  function renderTitle(){
+    const el=document.getElementById("calTitle");
+    if(viewMode==="month"){
+      el.textContent = MONTHS[viewDate.getMonth()]+" "+viewDate.getFullYear();
+    }else if(viewMode==="week"){
+      const s=weekStart(viewDate), e=new Date(s); e.setDate(s.getDate()+6);
+      el.innerHTML = "Tydzień "+weekNumber(s)+
+        "<small>"+s.getDate()+" "+MONTHS_GEN[s.getMonth()]+" – "+e.getDate()+" "+MONTHS_GEN[e.getMonth()]+" "+e.getFullYear()+"</small>";
+    }else{
+      const dt=parseKey(selectedKey);
+      el.innerHTML = WEEKDAYS_LONG[(dt.getDay()+6)%7]+
+        "<small>"+dt.getDate()+" "+MONTHS_GEN[dt.getMonth()]+" "+dt.getFullYear()+"</small>";
+    }
+  }
+
+  /* ====== WIDOK: MIESIĄC ====== */
+  function renderMonth(area){
+    const y=viewDate.getFullYear(), m=viewDate.getMonth();
+    let html='<div class="card"><div class="weekdays">'+
+      WEEKDAYS.map(w=>'<div class="weekday">'+w+'</div>').join("")+
+      '</div><div class="days">';
+
+    const startOff=(new Date(y,m,1).getDay()+6)%7;
+    const daysInMonth=new Date(y,m+1,0).getDate();
+    const tKey=todayKey();
+
+    for(let i=0;i<startOff;i++) html+='<div class="day empty"></div>';
+
+    for(let d=1; d<=daysInMonth; d++){
+      const key=keyOf(y,m,d);
+      const dd=data[key];
+      const acts=sortedActs(key);
+      let cls="day";
+      if(key===tKey) cls+=" today";
+      if(key===selectedKey) cls+=" selected";
+
+      let inner='<div class="day-num"><span>'+d+'</span></div>';
+      if(acts.length){
+        inner+='<div class="day-events">';
+        acts.slice(0,3).forEach(a=>inner+=chip(a,false));
+        if(acts.length>3) inner+='<div class="ev-more">+'+(acts.length-3)+' więcej</div>';
+        inner+='</div>';
+      }else if(dd&&dd.diary&&dd.diary.trim()){
+        inner+='<div class="day-events"><div class="ev-chip" style="background:var(--teal)">📝 Wpis</div></div>';
+      }
+      html+='<div class="'+cls+'" data-key="'+key+'">'+inner+'</div>';
+    }
+    html+='</div></div>';
+    area.innerHTML=html;
+
+    area.querySelectorAll(".day[data-key]").forEach(el=>{
+      el.addEventListener("click", ()=>openDay(el.dataset.key));
+    });
+  }
+
+  /* ====== WIDOK: TYDZIEŃ ====== */
+  function renderWeek(area){
+    const s=weekStart(viewDate);
+    const tKey=todayKey();
+    let html='<div class="week-grid">';
+    for(let i=0;i<7;i++){
+      const dt=new Date(s); dt.setDate(s.getDate()+i);
+      const key=keyOfDate(dt);
+      const acts=sortedActs(key);
+      const dd=data[key];
+      let cls="week-day"+(key===tKey?" today":"");
+      html+='<div class="'+cls+'" data-key="'+key+'">'+
+        '<div class="week-day-head">'+
+          '<span class="week-day-name">'+WEEKDAYS_LONG[i]+'</span>'+
+          '<span class="week-day-num">'+dt.getDate()+'</span>'+
+        '</div>'+
+        '<div class="week-events">';
+      if(acts.length){
+        acts.forEach(a=>html+=chip(a,true));
+      }else if(dd&&dd.diary&&dd.diary.trim()){
+        html+='<div class="ev-chip" style="background:var(--teal)">📝 Wpis w dzienniku</div>';
+      }else{
+        html+='<div class="week-empty">Brak wydarzeń</div>';
+      }
+      html+='</div></div>';
+    }
+    html+='</div>';
+    area.innerHTML=html;
+
+    area.querySelectorAll(".week-day[data-key]").forEach(el=>{
+      el.addEventListener("click", ()=>openDay(el.dataset.key));
+    });
+  }
+
+  /* ====== WIDOK: DZIEŃ ====== */
+  function renderDay(area){
+    const day=getDay(selectedKey);
+    area.innerHTML=`
+      <div class="day-view">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Planer aktywności</h2>
+              <div class="panel-date">${longDate(selectedKey)}</div>
+            </div>
+            <button class="btn" id="addActBtn">+ Dodaj aktywność</button>
+          </div>
+          <div class="form hidden" id="actForm">
+            <div class="field">
+              <label>Nazwa aktywności</label>
+              <input type="text" id="actName" placeholder="np. Spotkanie zespołu">
+            </div>
+            <div class="field">
+              <label>Kategoria</label>
+              <select id="actCat">${CATEGORIES.map(c=>`<option>${c}</option>`).join("")}</select>
+            </div>
+            <div class="row2">
+              <div class="field"><label>Godzina rozpoczęcia</label><input type="time" id="actStart" value="08:00" step="300"></div>
+              <div class="field"><label>Godzina zakończenia</label><input type="time" id="actEnd" value="09:00" step="300"></div>
+            </div>
+            <div class="field"><label>Czas trwania</label><br><span class="duration-badge" id="durBadge">1h</span></div>
+            <div class="field">
+              <label>Powiadomienie</label>
+              <select id="actNotify">${NOTIFY_OPTS.map(o=>`<option value="${o.v}">${o.label}</option>`).join("")}</select>
+            </div>
+            <div class="field"><label>Kolor aktywności</label><div class="colors" id="colorPicker"></div></div>
+            <div class="form-actions">
+              <button class="btn ghost small" id="cancelActBtn">Anuluj</button>
+              <button class="btn small" id="saveActBtn">Zapisz aktywność</button>
+            </div>
+          </div>
+          <div id="timelineWrap"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div><h2>Dziennik</h2><div class="panel-date">${longDate(selectedKey)}</div></div>
+          </div>
+          <textarea class="diary-area" id="diaryArea" placeholder="Jak minął dzień? Zapisz swoje myśli...">${escapeHtml(day.diary)}</textarea>
+          <div class="diary-foot">
+            <span class="char-count" id="charCount"></span>
+            <div style="display:flex;align-items:center;gap:12px">
+              <span class="saved-flash" id="savedFlash">✓ Zapisano</span>
+              <button class="btn teal" id="saveDiaryBtn">Zapisz</button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+
+    // dziennik
+    const ta=document.getElementById("diaryArea"), cc=document.getElementById("charCount");
+    const upd=()=>cc.textContent=ta.value.length+" znaków";
+    upd(); ta.addEventListener("input",upd);
+    document.getElementById("saveDiaryBtn").addEventListener("click",()=>{
+      day.diary=ta.value; saveData();
+      const f=document.getElementById("savedFlash"); f.classList.add("show");
+      setTimeout(()=>f.classList.remove("show"),1500);
+    });
+
+    setupActivityForm(area);
+    renderTimeline();
+  }
+
+  function setupActivityForm(area){
+    const form=document.getElementById("actForm");
+    const startI=document.getElementById("actStart"), endI=document.getElementById("actEnd");
+    const durBadge=document.getElementById("durBadge"), colorPicker=document.getElementById("colorPicker");
+
+    formColor=COLORS[0]; colorPicker.innerHTML="";
+    COLORS.forEach(c=>{
+      const sw=document.createElement("div");
+      sw.className="color-opt"+(c===formColor?" active":"");
+      sw.style.background=c;
+      sw.addEventListener("click",()=>{ formColor=c; [...colorPicker.children].forEach(ch=>ch.classList.remove("active")); sw.classList.add("active"); });
+      colorPicker.appendChild(sw);
+    });
+
+    const updDur=()=>durBadge.textContent=fmtDuration(minutesOf(startI.value),minutesOf(endI.value));
+    startI.addEventListener("input",updDur); endI.addEventListener("input",updDur); updDur();
+
+    document.getElementById("addActBtn").addEventListener("click",()=>form.classList.toggle("hidden"));
+    document.getElementById("cancelActBtn").addEventListener("click",()=>form.classList.add("hidden"));
+    document.getElementById("saveActBtn").addEventListener("click",()=>{
+      const name=document.getElementById("actName").value.trim();
+      if(!name){ alert("Podaj nazwę aktywności"); return; }
+      if(minutesOf(endI.value)<=minutesOf(startI.value)){ alert("Godzina zakończenia musi być późniejsza niż rozpoczęcia"); return; }
+      const notify=document.getElementById("actNotify").value;
+      const day=getDay(selectedKey);
+      day.activities.push({
+        id:Date.now()+"-"+Math.random().toString(36).slice(2,7),
+        name, cat:document.getElementById("actCat").value,
+        start:startI.value, end:endI.value, color:formColor, notify:notify
+      });
+      day.activities.sort((a,b)=>minutesOf(a.start)-minutesOf(b.start));
+      saveData();
+      if(notify) requestNotifyPermission();
+      scheduleNotifications();
+      renderDay(area);
+    });
+  }
+
+  function renderTimeline(){
+    const wrap=document.getElementById("timelineWrap");
+    const day=getDay(selectedKey);
+    let html='<div class="timeline">';
+    for(let h=DAY_START;h<=DAY_END;h++)
+      html+='<div class="hour-row"><span class="hour-label">'+pad(h)+':00</span><div class="hour-line"></div></div>';
+    html+='<div class="activities-layer" id="actLayer"></div></div>';
+    wrap.innerHTML=html;
+
+    const layer=document.getElementById("actLayer");
+    const rangeStart=DAY_START*60;
+
+    if(!day.activities.length){
+      const hint=document.createElement("div");
+      hint.className="empty-hint"; hint.style.pointerEvents="auto";
+      hint.textContent="Brak aktywności. Kliknij „Dodaj aktywność”.";
+      wrap.querySelector(".timeline").appendChild(hint);
+    }
+
+    day.activities.forEach(act=>{
+      let s=minutesOf(act.start), e=minutesOf(act.end); if(e<=s) e=s+30;
+      const cs=Math.max(s,rangeStart), ce=Math.min(e,DAY_END*60+60);
+      const top=(cs-rangeStart)/60*HOUR_PX;
+      const height=Math.max((ce-cs)/60*HOUR_PX,22);
+      const b=document.createElement("div");
+      b.className="activity-block"; b.style.top=top+"px"; b.style.height=height+"px"; b.style.background=act.color;
+      const bell = notifyShort(act.notify) ? ' · 🔔 '+notifyShort(act.notify) : '';
+      b.innerHTML='<span class="act-name">'+escapeHtml(act.name)+'</span>'+
+        '<span class="act-meta">'+act.start+'–'+act.end+' · '+act.cat+' · '+fmtDuration(s,e)+bell+'</span>'+
+        '<span class="act-del" title="Usuń">×</span>';
+      b.querySelector(".act-del").addEventListener("click",ev=>{
+        ev.stopPropagation();
+        if(confirm("Usunąć aktywność „"+act.name+"”?")){
+          if(scheduled[act.id]){ clearTimeout(scheduled[act.id]); delete scheduled[act.id]; }
+          const d=getDay(selectedKey);
+          d.activities=d.activities.filter(a=>a.id!==act.id);
+          saveData(); renderDay(document.getElementById("viewArea"));
+        }
+      });
+      layer.appendChild(b);
+    });
+  }
+
+  /* ====== UTIL ====== */
+  function escapeHtml(s){
+    return String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
+
+  /* ====== POWIADOMIENIA ====== */
+  const scheduled = {};   // id aktywności -> timeoutId (by nie dublować)
+  function requestNotifyPermission(){
+    if("Notification" in window && Notification.permission==="default"){
+      Notification.requestPermission();
+    }
+  }
+  function fireNotify(act){
+    const title="🔔 "+act.name;
+    const body=act.start+"–"+act.end+" · "+act.cat;
+    if("Notification" in window && Notification.permission==="granted"){
+      try{ new Notification(title,{body}); return; }catch(e){}
+    }
+    // zapasowo: gdy brak zgody / wsparcia
+    console.log("Przypomnienie:",title,body);
+  }
+  function scheduleNotifications(){
+    const now=Date.now();
+    const maxAhead=26*3600*1000; // planuj tylko zdarzenia w najbliższych ~26h
+    for(const key in data){
+      const acts=(data[key]&&data[key].activities)||[];
+      acts.forEach(act=>{
+        if(!act.notify) return;
+        const dt=parseKey(key);
+        const [h,m]=act.start.split(":").map(Number);
+        dt.setHours(h,m,0,0);
+        const trigger=dt.getTime()-Number(act.notify)*60000;
+        const delay=trigger-now;
+        if(delay>0 && delay<=maxAhead && !scheduled[act.id]){
+          scheduled[act.id]=setTimeout(()=>{ fireNotify(act); delete scheduled[act.id]; }, delay);
+        }
+      });
+    }
+  }
+
+  /* ====== AKCJE ====== */
+  function openDay(key){
+    selectedKey=key;
+    viewDate=parseKey(key);
+    viewMode="day";
+    render();
+    window.scrollTo({top:0,behavior:"smooth"});
+  }
+
+  document.getElementById("viewSwitch").addEventListener("click",e=>{
+    const b=e.target.closest("button[data-mode]"); if(!b) return;
+    viewMode=b.dataset.mode;
+    if(viewMode==="day") viewDate=parseKey(selectedKey);
+    render();
+  });
+
+  document.getElementById("prevBtn").addEventListener("click",()=>{
+    if(viewMode==="month") viewDate.setMonth(viewDate.getMonth()-1);
+    else if(viewMode==="week") viewDate.setDate(viewDate.getDate()-7);
+    else{ viewDate.setDate(viewDate.getDate()-1); selectedKey=keyOfDate(viewDate); }
+    render();
+  });
+  document.getElementById("nextBtn").addEventListener("click",()=>{
+    if(viewMode==="month") viewDate.setMonth(viewDate.getMonth()+1);
+    else if(viewMode==="week") viewDate.setDate(viewDate.getDate()+7);
+    else{ viewDate.setDate(viewDate.getDate()+1); selectedKey=keyOfDate(viewDate); }
+    render();
+  });
+  document.getElementById("todayBtn").addEventListener("click",()=>{
+    viewDate=new Date(); selectedKey=todayKey(); render();
+  });
+
+  /* ====== START ====== */
+
+  // Obsługa skrótu ?view=today z manifest.json shortcuts
+  if(new URLSearchParams(location.search).get('view')==='today'){
+    viewDate=new Date(); selectedKey=todayKey(); viewMode='day';
+  }
+
+  render();
+  scheduleNotifications();
+})();
+
+/* ====================================================
+   PWA — Service Worker + Install Prompt
+   (poza IIFE, by dostęp do globalnego scope)
+   ==================================================== */
+(function initPWA(){
+
+  /* 1. Rejestracja Service Workera */
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./service-worker.js', { scope: './' })
+        .then(reg => {
+          console.log('[SW] Zarejestrowany, scope:', reg.scope);
+          // Sprawdź aktualizację przy każdym otwarciu
+          reg.addEventListener('updatefound', () => {
+            const newWorker = reg.installing;
+            newWorker.addEventListener('statechange', () => {
+              if(newWorker.state === 'installed' && navigator.serviceWorker.controller){
+                console.log('[SW] Nowa wersja dostępna — odśwież stronę.');
+              }
+            });
+          });
+        })
+        .catch(err => console.warn('[SW] Błąd rejestracji:', err));
+    });
+  }
+
+  /* 2. Pasek instalacji PWA */
+  const bar      = document.getElementById('pwaBar');
+  const btnYes   = document.getElementById('pwaBarInstall');
+  const btnNo    = document.getElementById('pwaBarDismiss');
+  const badge    = document.getElementById('pwaBadge');
+  let deferredPrompt = null;
+
+  // Pokaż badge jeśli uruchomiono ze skrótu
+  if(window.matchMedia('(display-mode: standalone)').matches ||
+     window.navigator.standalone === true){
+    badge.classList.add('show');
+  }
+
+  // Chrome / Edge / Android — beforeinstallprompt
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredPrompt = e;
+    // Nie pokazuj jeśli już w trybie standalone
+    if(!window.matchMedia('(display-mode: standalone)').matches){
+      bar.classList.remove('hidden');
+    }
+  });
+
+  btnYes.addEventListener('click', async () => {
+    if(!deferredPrompt) return;
+    bar.classList.add('hidden');
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log('[PWA] Wybór użytkownika:', outcome);
+    deferredPrompt = null;
+  });
+
+  btnNo.addEventListener('click', () => {
+    bar.classList.add('hidden');
+    // Ukryj na 7 dni
+    localStorage.setItem('pwa-dismissed', Date.now() + 7*24*3600*1000);
+  });
+
+  // Nie pokazuj jeśli użytkownik kliknął "Nie teraz" niedawno
+  const dismissedUntil = Number(localStorage.getItem('pwa-dismissed') || 0);
+  if(Date.now() < dismissedUntil){
+    window.addEventListener('beforeinstallprompt', e => e.preventDefault(), { once: true });
+  }
+
+  // Po instalacji schowaj pasek
+  window.addEventListener('appinstalled', () => {
+    bar.classList.add('hidden');
+    badge.classList.add('show');
+    deferredPrompt = null;
+    console.log('[PWA] Zainstalowano!');
+  });
+
+  /* 3. iOS Safari — ręczna instrukcja (iOS nie obsługuje beforeinstallprompt) */
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const isStandalone = window.navigator.standalone === true;
+  const iosDismissed = Number(localStorage.getItem('pwa-ios-dismissed') || 0);
+
+  if(isIOS && !isStandalone && Date.now() > iosDismissed){
+    // Pokaż własny pasek z instrukcją dla iOS
+    const iosBar = document.createElement('div');
+    iosBar.className = 'pwa-install-bar';
+    iosBar.style.background = '#1d4ed8';
+    iosBar.innerHTML = `
+      <div class="pwa-install-bar-text" style="flex:1">
+        <span>📲 Aby zainstalować: dotknij <strong>Udostępnij</strong> →
+              <strong>Dodaj do ekranu głównego</strong></span>
+      </div>
+      <div class="pwa-install-bar-actions">
+        <button class="dismiss" id="iosDismiss">OK</button>
+      </div>`;
+    document.body.appendChild(iosBar);
+    document.getElementById('iosDismiss').addEventListener('click', () => {
+      iosBar.classList.add('hidden');
+      localStorage.setItem('pwa-ios-dismissed', Date.now() + 14*24*3600*1000);
+    });
+  }
+
+})();
+</script>
+</body>
+</html>

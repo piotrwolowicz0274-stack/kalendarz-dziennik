@@ -1,0 +1,37 @@
+{
+  "name": "Kalendarz-Dziennik",
+  "short_name": "Dziennik",
+  "description": "Planuj aktywności i prowadź swój dziennik",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#fbf5f1",
+  "theme_color": "#f1745a",
+  "lang": "pl-PL",
+  "categories": ["productivity", "lifestyle"],
+  "icons": [
+    {
+      "src": "./icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Dzisiaj",
+      "short_name": "Dziś",
+      "description": "Otwórz widok dzisiejszego dnia",
+      "url": "./index.html?view=today",
+      "icons": [{ "src": "./icons/icon.svg", "sizes": "any" }]
+    }
+  ]
+}
