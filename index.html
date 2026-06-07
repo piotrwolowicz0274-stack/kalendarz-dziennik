@@ -777,18 +777,29 @@ const VN = (function(){
   /* --- narzędzia anty-dublowanie (Web Speech na Androidzie potrafi
          rozpoznać ten sam fragment wielokrotnie) --- */
   function normWord(w){ return String(w).toLowerCase().replace(/[^\p{L}\p{N}]/gu,""); }
-  // usuń bezpośrednio powtórzone identyczne słowa: "mleko mleko mleko" -> "mleko"
-  function dedupeAdjacent(text){
-    const words=String(text).split(/\s+/).filter(Boolean);
-    const out=[];
-    for(const w of words){
-      const n=normWord(w);
-      if(out.length && n && n===normWord(out[out.length-1])) continue;
-      out.push(w);
+
+  // Usuń powtórzone CAŁE sekwencje słów stojące obok siebie.
+  // Łapie i "mleko mleko", i "muszę kupić mleko muszę kupić mleko".
+  function collapseRepeats(text){
+    let words=String(text).split(/\s+/).filter(Boolean);
+    let changed=true, guard=0;
+    while(changed && guard++<60){
+      changed=false;
+      for(let i=0;i<words.length && !changed;i++){
+        const maxK=Math.min(Math.floor((words.length-i)/2),8);
+        for(let k=maxK;k>=1;k--){
+          let dup=true;
+          for(let j=0;j<k;j++){
+            if(normWord(words[i+j])!==normWord(words[i+k+j])){ dup=false; break; }
+          }
+          if(dup){ words.splice(i+k,k); changed=true; break; }  // usuń drugą kopię bloku
+        }
+      }
     }
-    return out.join(" ");
+    return words.join(" ");
   }
-  // sklej dwa fragmenty usuwając nakładające się słowa na styku sesji
+
+  // Sklej dwa fragmenty usuwając nakładające się słowa na styku.
   function stitch(a,b){
     a=String(a).trim(); b=String(b).trim();
     if(!a) return b; if(!b) return a;
@@ -802,7 +813,7 @@ const VN = (function(){
     return a+" "+b;
   }
   function liveText(){
-    return dedupeAdjacent((committed+" "+sessionFinal+" "+lastInterim).replace(/\s+/g," ").trim());
+    return collapseRepeats((committed+" "+sessionFinal+" "+lastInterim).replace(/\s+/g," ").trim());
   }
 
   function startRec(){
@@ -825,11 +836,13 @@ const VN = (function(){
     rec.maxAlternatives=1;
     sessionFinal=""; lastInterim="";
     rec.onresult = e=>{
-      // odbuduj CAŁY tekst tej sesji od zera — zero dublowania
+      // Odbuduj tekst sesji od zera. Android potrafi zwracać ten sam fragment
+      // narastająco jako kolejne wyniki "final" — dlatego SKLEJAMY je przez stitch
+      // (usuwa nakładkę) zamiast doklejać.
       let fin="", inter="";
       for(let i=0;i<e.results.length;i++){
         const t=e.results[i][0].transcript;
-        if(e.results[i].isFinal) fin+=t; else inter+=t;
+        if(e.results[i].isFinal) fin=stitch(fin,t); else inter=t;
       }
       sessionFinal=fin; lastInterim=inter;
       showTranscript(liveText());
@@ -869,9 +882,9 @@ const VN = (function(){
 
   function finalizeRec(){
     if(finalizing) return; finalizing=true;
-    // domknij ewentualną resztę sesji + usuń powtórzenia
+    // domknij ewentualną resztę sesji + usuń powtórzenia całych fraz
     const tail=(sessionFinal+" "+lastInterim).replace(/\s+/g," ").trim();
-    const transcript=dedupeAdjacent(stitch(committed, tail));
+    const transcript=collapseRepeats(stitch(committed, tail));
     committed=""; sessionFinal=""; lastInterim="";
     if(!transcript){
       setStatus("Nie wykryto mowy. Spróbuj ponownie.","warn");
