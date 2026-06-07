@@ -774,7 +774,36 @@ const VN = (function(){
     const s=Math.floor((Date.now()-recStart)/1000);
     elTimer.textContent=Math.floor(s/60)+":"+pad(s%60);
   }
-  function liveText(){ return (committed+" "+sessionFinal+" "+lastInterim).replace(/\s+/g," ").trim(); }
+  /* --- narzędzia anty-dublowanie (Web Speech na Androidzie potrafi
+         rozpoznać ten sam fragment wielokrotnie) --- */
+  function normWord(w){ return String(w).toLowerCase().replace(/[^\p{L}\p{N}]/gu,""); }
+  // usuń bezpośrednio powtórzone identyczne słowa: "mleko mleko mleko" -> "mleko"
+  function dedupeAdjacent(text){
+    const words=String(text).split(/\s+/).filter(Boolean);
+    const out=[];
+    for(const w of words){
+      const n=normWord(w);
+      if(out.length && n && n===normWord(out[out.length-1])) continue;
+      out.push(w);
+    }
+    return out.join(" ");
+  }
+  // sklej dwa fragmenty usuwając nakładające się słowa na styku sesji
+  function stitch(a,b){
+    a=String(a).trim(); b=String(b).trim();
+    if(!a) return b; if(!b) return a;
+    const aw=a.split(/\s+/), bw=b.split(/\s+/);
+    const max=Math.min(aw.length,bw.length,15);
+    for(let k=max;k>=1;k--){
+      let ok=true;
+      for(let j=0;j<k;j++){ if(normWord(aw[aw.length-k+j])!==normWord(bw[j])){ ok=false; break; } }
+      if(ok) return aw.concat(bw.slice(k)).join(" ");
+    }
+    return a+" "+b;
+  }
+  function liveText(){
+    return dedupeAdjacent((committed+" "+sessionFinal+" "+lastInterim).replace(/\s+/g," ").trim());
+  }
 
   function startRec(){
     if(recording || processing || !speechSupported) return;
@@ -813,8 +842,8 @@ const VN = (function(){
       // pozostałe błędy (np. no-speech) — onend wznowi nasłuch
     };
     rec.onend = ()=>{
-      // domknij tekst tej sesji do bufora (jeden raz)
-      committed = (committed+" "+sessionFinal).replace(/\s+/g," ").trim();
+      // domknij tekst tej sesji do bufora, usuwając nakładkę na styku sesji
+      committed = stitch(committed, sessionFinal);
       sessionFinal=""; lastInterim="";
       if(recording && Date.now()-recStart < MAX_REC_MS){
         try{ beginSession(); return; }catch(e){}
@@ -840,7 +869,9 @@ const VN = (function(){
 
   function finalizeRec(){
     if(finalizing) return; finalizing=true;
-    const transcript=(committed+" "+lastInterim).replace(/\s+/g," ").trim();
+    // domknij ewentualną resztę sesji + usuń powtórzenia
+    const tail=(sessionFinal+" "+lastInterim).replace(/\s+/g," ").trim();
+    const transcript=dedupeAdjacent(stitch(committed, tail));
     committed=""; sessionFinal=""; lastInterim="";
     if(!transcript){
       setStatus("Nie wykryto mowy. Spróbuj ponownie.","warn");
