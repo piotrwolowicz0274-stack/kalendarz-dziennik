@@ -147,7 +147,7 @@
   .week-empty{font-size:.78rem;color:var(--muted);opacity:.7}
 
   /* ===== WIDOK DNIA ===== */
-  .day-view{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .day-view{display:block}
   .panel{
     background:var(--card);border:2px solid var(--border);border-radius:var(--radius);
     box-shadow:var(--shadow);padding:20px;display:flex;flex-direction:column;
@@ -213,18 +213,6 @@
   .color-opt.active{border-color:var(--text);transform:scale(1.12)}
   .form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}
 
-  /* ===== DZIENNIK ===== */
-  .diary-area{
-    flex:1;width:100%;min-height:300px;resize:vertical;
-    border:2px solid var(--border-strong);border-radius:12px;
-    padding:14px;font-size:.95rem;font-weight:600;font-family:inherit;line-height:1.6;
-    color:var(--text);background:var(--inset);
-  }
-  .diary-area:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-soft);background:#fff}
-  .diary-foot{display:flex;align-items:center;justify-content:space-between;margin-top:12px;gap:10px;flex-wrap:wrap}
-  .char-count{font-size:.78rem;font-weight:700;color:var(--muted)}
-  .saved-flash{font-size:.8rem;color:var(--teal-hover);font-weight:800;opacity:0;transition:opacity .3s}
-  .saved-flash.show{opacity:1}
 
   /* ===== MIKROFON ===== */
   .mic-btn{
@@ -281,9 +269,6 @@
     font-size:.8rem;font-weight:800;font-family:inherit;
     margin-top:4px;align-self:flex-end;
   }
-  .diary-mic-row{display:flex;gap:10px;align-items:flex-start;flex:1}
-  .diary-mic-row textarea{flex:1}
-  .diary-mic-col{display:flex;flex-direction:column;gap:8px;padding-top:2px}
 
   /* ===== PRZYCISK INSTALACJI PWA ===== */
   .pwa-install-bar{
@@ -321,7 +306,6 @@
   .pwa-running-badge.show{display:flex}
 
   @media (max-width:760px){
-    .day-view{grid-template-columns:1fr}
     h1{font-size:1.35rem}
     .cal-title{font-size:1.02rem}
     .day{min-height:74px}
@@ -653,8 +637,6 @@ function parseActivityVoice(text){
         acts.slice(0,3).forEach(a=>inner+=chip(a,false));
         if(acts.length>3) inner+='<div class="ev-more">+'+(acts.length-3)+' więcej</div>';
         inner+='</div>';
-      }else if(dd&&dd.diary&&dd.diary.trim()){
-        inner+='<div class="day-events"><div class="ev-chip" style="background:var(--teal)">📝 Wpis</div></div>';
       }
       html+='<div class="'+cls+'" data-key="'+key+'">'+inner+'</div>';
     }
@@ -685,8 +667,6 @@ function parseActivityVoice(text){
         '<div class="week-events">';
       if(acts.length){
         acts.forEach(a=>html+=chip(a,true));
-      }else if(dd&&dd.diary&&dd.diary.trim()){
-        html+='<div class="ev-chip" style="background:var(--teal)">📝 Wpis w dzienniku</div>';
       }else{
         html+='<div class="week-empty">Brak wydarzeń</div>';
       }
@@ -702,105 +682,58 @@ function parseActivityVoice(text){
 
   /* ====== WIDOK: DZIEŃ ====== */
   function renderDay(area){
-    const day=getDay(selectedKey);
     area.innerHTML=`
-      <div class="day-view">
-        <div class="panel">
-          <div class="panel-head">
-            <div>
-              <h2>Planer aktywności</h2>
-              <div class="panel-date">${longDate(selectedKey)}</div>
-            </div>
-            <button class="btn" id="addActBtn">+ Dodaj aktywność</button>
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Planer aktywności</h2>
+            <div class="panel-date">${longDate(selectedKey)}</div>
           </div>
-          <div class="form hidden" id="actForm">
-            <!-- SEKCJA: Dyktuj głosem całą aktywność -->
-            <div class="voice-dictate-wrap">
-              <label>🎤 Powiedz całą aktywność jednym zdaniem</label>
-              <div class="voice-dictate-row">
-                <div class="voice-result-box" id="voiceResultBox">np. „Spotkanie z klientem, praca, dziesiąta, dwunasta"</div>
-                <button class="mic-btn" id="micDictateBtn" title="Dyktuj aktywność głosem">${MIC_SVG}</button>
-              </div>
-              <div class="voice-parsed" id="voiceParsed">
-                <div class="voice-parsed-row"><span class="voice-parsed-label">Nazwa:</span><span class="voice-parsed-val" id="vpName"></span></div>
-                <div class="voice-parsed-row"><span class="voice-parsed-label">Kategoria:</span><span class="voice-parsed-val" id="vpCat"></span></div>
-                <div class="voice-parsed-row"><span class="voice-parsed-label">Godziny:</span><span class="voice-parsed-val" id="vpTime"></span></div>
-                <button class="voice-apply-btn" id="voiceApplyBtn">✓ Wstaw do formularza</button>
-              </div>
-            </div>
-            <!-- pola ręczne -->
-            <div class="field">
-              <label>Nazwa aktywności</label>
-              <div class="field-row">
-                <input type="text" id="actName" placeholder="np. Spotkanie zespołu">
-                <button class="mic-btn" id="micNameBtn" title="Dyktuj nazwę">${MIC_SVG}</button>
-              </div>
-              <div class="mic-preview" id="prevName"></div>
-            </div>
-            <div class="field">
-              <label>Kategoria</label>
-              <select id="actCat">${CATEGORIES.map(c=>`<option>${c}</option>`).join("")}</select>
-            </div>
-            <div class="row2">
-              <div class="field"><label>Godzina rozpoczęcia</label><input type="time" id="actStart" value="08:00" step="300"></div>
-              <div class="field"><label>Godzina zakończenia</label><input type="time" id="actEnd" value="09:00" step="300"></div>
-            </div>
-            <div class="field"><label>Czas trwania</label><br><span class="duration-badge" id="durBadge">1h</span></div>
-            <div class="field">
-              <label>Powiadomienie</label>
-              <select id="actNotify">${NOTIFY_OPTS.map(o=>`<option value="${o.v}">${o.label}</option>`).join("")}</select>
-            </div>
-            <div class="field"><label>Kolor aktywności</label><div class="colors" id="colorPicker"></div></div>
-            <div class="form-actions">
-              <button class="btn ghost small" id="cancelActBtn">Anuluj</button>
-              <button class="btn small" id="saveActBtn">Zapisz aktywność</button>
-            </div>
-          </div>
-          <div id="timelineWrap"></div>
+          <button class="btn" id="addActBtn">+ Dodaj aktywność</button>
         </div>
-
-        <div class="panel">
-          <div class="panel-head">
-            <div><h2>Dziennik</h2><div class="panel-date">${longDate(selectedKey)}</div></div>
-          </div>
-          <div class="diary-mic-row">
-            <textarea class="diary-area" id="diaryArea" placeholder="Jak minął dzień? Zapisz swoje myśli...">${escapeHtml(day.diary)}</textarea>
-            <div class="diary-mic-col">
-              <button class="mic-btn" id="micDiaryBtn" title="Dyktuj wpis głosem" style="width:44px;height:44px">${MIC_SVG}</button>
-              <div style="font-size:.62rem;font-weight:700;color:var(--muted);text-align:center;line-height:1.2">Mów</div>
+        <div class="form hidden" id="actForm">
+          <div class="voice-dictate-wrap">
+            <label>🎤 Powiedz całą aktywność jednym zdaniem</label>
+            <div class="voice-dictate-row">
+              <div class="voice-result-box" id="voiceResultBox">np. „Spotkanie z klientem, praca, dziesiąta, dwunasta"</div>
+              <button class="mic-btn" id="micDictateBtn" title="Dyktuj aktywność głosem">${MIC_SVG}</button>
+            </div>
+            <div class="voice-parsed" id="voiceParsed">
+              <div class="voice-parsed-row"><span class="voice-parsed-label">Nazwa:</span><span class="voice-parsed-val" id="vpName"></span></div>
+              <div class="voice-parsed-row"><span class="voice-parsed-label">Kategoria:</span><span class="voice-parsed-val" id="vpCat"></span></div>
+              <div class="voice-parsed-row"><span class="voice-parsed-label">Godziny:</span><span class="voice-parsed-val" id="vpTime"></span></div>
+              <button class="voice-apply-btn" id="voiceApplyBtn">✓ Wstaw do formularza</button>
             </div>
           </div>
-          <div class="mic-preview" id="prevDiary"></div>
-          <div class="diary-foot">
-            <span class="char-count" id="charCount"></span>
-            <div style="display:flex;align-items:center;gap:12px">
-              <span class="saved-flash" id="savedFlash">✓ Zapisano</span>
-              <button class="btn teal" id="saveDiaryBtn">Zapisz</button>
+          <div class="field">
+            <label>Nazwa aktywności</label>
+            <div class="field-row">
+              <input type="text" id="actName" placeholder="np. Spotkanie zespołu">
+              <button class="mic-btn" id="micNameBtn" title="Dyktuj nazwę">${MIC_SVG}</button>
             </div>
+            <div class="mic-preview" id="prevName"></div>
+          </div>
+          <div class="field">
+            <label>Kategoria</label>
+            <select id="actCat">${CATEGORIES.map(c=>`<option>${c}</option>`).join("")}</select>
+          </div>
+          <div class="row2">
+            <div class="field"><label>Godzina rozpoczęcia</label><input type="time" id="actStart" value="08:00" step="300"></div>
+            <div class="field"><label>Godzina zakończenia</label><input type="time" id="actEnd" value="09:00" step="300"></div>
+          </div>
+          <div class="field"><label>Czas trwania</label><br><span class="duration-badge" id="durBadge">1h</span></div>
+          <div class="field">
+            <label>Powiadomienie</label>
+            <select id="actNotify">${NOTIFY_OPTS.map(o=>`<option value="${o.v}">${o.label}</option>`).join("")}</select>
+          </div>
+          <div class="field"><label>Kolor aktywności</label><div class="colors" id="colorPicker"></div></div>
+          <div class="form-actions">
+            <button class="btn ghost small" id="cancelActBtn">Anuluj</button>
+            <button class="btn small" id="saveActBtn">Zapisz aktywność</button>
           </div>
         </div>
+        <div id="timelineWrap"></div>
       </div>`;
-
-    // dziennik
-    const ta=document.getElementById("diaryArea"), cc=document.getElementById("charCount");
-    const upd=()=>cc.textContent=ta.value.length+" znaków";
-    upd(); ta.addEventListener("input",upd);
-    document.getElementById("saveDiaryBtn").addEventListener("click",()=>{
-      day.diary=ta.value; saveData();
-      const f=document.getElementById("savedFlash"); f.classList.add("show");
-      setTimeout(()=>f.classList.remove("show"),1500);
-    });
-
-    // mikrofon — dziennik
-    setupMicBtn({
-      btnId:'micDiaryBtn', prevId:'prevDiary',
-      continuous:true,
-      onFinal: txt => {
-        const sep = ta.value && !ta.value.endsWith(' ') && !ta.value.endsWith('\n') ? ' ' : '';
-        ta.value += sep + txt;
-        upd();
-      }
-    });
 
     setupActivityForm(area);
     renderTimeline();
