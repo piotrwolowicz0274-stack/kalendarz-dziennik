@@ -6,7 +6,7 @@
      • Reszta żądań GET                   → Network First + cache fallback
    ======================================================== */
 
-const CACHE_NAME  = 'dziennik-v5';
+const CACHE_NAME  = 'dziennik-v6';
 const SHELL_URLS  = [
   './',
   './index.html',

@@ -163,12 +163,26 @@
   .modal-info strong{display:block;font-weight:600;color:var(--text)}
   .modal-info span{font-size:.74rem;color:var(--muted)}
   .modal-actions{display:flex;gap:8px;justify-content:flex-end}
-  .modal-del-btn{
-    border:none;background:var(--red-soft);color:var(--red);
-    padding:9px 16px;border-radius:10px;cursor:pointer;
-    font-size:.84rem;font-weight:600;font-family:inherit;transition:background .12s;
+  /* lista wydarzeń w modalu */
+  .modal-event-list{display:flex;flex-direction:column;gap:8px;max-height:55vh;overflow-y:auto}
+  .modal-ev-card{
+    display:flex;gap:0;border-radius:12px;overflow:hidden;
+    box-shadow:0 1px 4px rgba(0,0,0,.08);
   }
-  .modal-del-btn:hover{background:#ffd5d3}
+  .modal-ev-strip{width:5px;flex:0 0 5px}
+  .modal-ev-body{
+    flex:1;background:var(--inset);padding:11px 14px;
+    display:flex;flex-direction:column;gap:3px;
+  }
+  .modal-ev-name{font-size:.95rem;font-weight:700;color:var(--text)}
+  .modal-ev-meta{font-size:.76rem;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap}
+  .modal-ev-del{
+    border:none;background:transparent;color:var(--border-strong);
+    padding:8px 10px;cursor:pointer;font-size:1rem;align-self:center;
+    transition:color .12s;flex:0 0 auto;
+  }
+  .modal-ev-del:hover{color:var(--red)}
+  .modal-empty{text-align:center;color:var(--muted);font-size:.88rem;padding:20px 0}
 
   /* ===== TYDZIEŃ ===== */
   .week-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
@@ -369,36 +383,18 @@
   <div id="viewArea"></div>
 </div>
 
-<!-- Modal szczegółów aktywności -->
+<!-- Modal wydarzeń dnia -->
 <div class="modal-overlay hidden" id="actModal">
   <div class="modal" role="dialog" aria-modal="true">
     <div class="modal-header">
-      <div class="modal-color-bar" id="modalColorBar"></div>
       <div class="modal-titles">
-        <div class="modal-name" id="modalName"></div>
-        <div class="modal-date" id="modalDate"></div>
+        <div class="modal-name" id="modalDate"></div>
       </div>
       <button class="modal-close" id="modalClose" aria-label="Zamknij">×</button>
     </div>
-    <div class="modal-rows">
-      <div class="modal-row">
-        <div class="modal-ico">🕐</div>
-        <div class="modal-info">
-          <strong id="modalTime"></strong>
-          <span id="modalDur"></span>
-        </div>
-      </div>
-      <div class="modal-row" id="modalNotifyRow">
-        <div class="modal-ico">🔔</div>
-        <div class="modal-info">
-          <strong id="modalNotify"></strong>
-          <span>Powiadomienie</span>
-        </div>
-      </div>
-    </div>
-    <div class="modal-actions">
-      <button class="modal-del-btn" id="modalDelete">Usuń wydarzenie</button>
-      <button class="btn" id="modalGoDay">Otwórz dzień</button>
+    <div class="modal-event-list" id="modalEventList"></div>
+    <div class="modal-actions" style="margin-top:16px">
+      <button class="btn" id="modalGoDay">Otwórz planer dnia</button>
     </div>
   </div>
 </div>
@@ -735,11 +731,7 @@ function parseActivityVoice(text){
     area.innerHTML=html;
 
     area.querySelectorAll(".day[data-key]").forEach(el=>{
-      el.addEventListener("click", e=>{
-        const chip=e.target.closest(".ev-chip[data-actid]");
-        if(chip){ e.stopPropagation(); openActivityModal(chip.dataset.key, chip.dataset.actid); return; }
-        openDay(el.dataset.key);
-      });
+      el.addEventListener("click", ()=>openDayModal(el.dataset.key));
     });
   }
 
@@ -771,11 +763,7 @@ function parseActivityVoice(text){
     area.innerHTML=html;
 
     area.querySelectorAll(".week-day[data-key]").forEach(el=>{
-      el.addEventListener("click", e=>{
-        const chip=e.target.closest(".ev-chip[data-actid]");
-        if(chip){ e.stopPropagation(); openActivityModal(chip.dataset.key, chip.dataset.actid); return; }
-        openDay(el.dataset.key);
-      });
+      el.addEventListener("click", ()=>openDayModal(el.dataset.key));
     });
   }
 
@@ -1016,55 +1004,65 @@ function parseActivityVoice(text){
     }
   }
 
-  /* ====== MODAL SZCZEGÓŁÓW AKTYWNOŚCI ====== */
+  /* ====== MODAL WYDARZEŃ DNIA ====== */
   (function initModal(){
-    const overlay = document.getElementById('actModal');
+    const overlay  = document.getElementById('actModal');
     const closeBtn = document.getElementById('modalClose');
-    const delBtn   = document.getElementById('modalDelete');
     const goDayBtn = document.getElementById('modalGoDay');
-    let _key=null, _actId=null;
+    const dateEl   = document.getElementById('modalDate');
+    const listEl   = document.getElementById('modalEventList');
+    let _key = null;
 
-    window.openActivityModal = function(key, actId){
-      const day=data[key]; if(!day) return;
-      const act=day.activities.find(a=>a.id===actId); if(!act) return;
-      _key=key; _actId=actId;
-
-      document.getElementById('modalColorBar').style.background = act.color||ACT_COLOR;
-      document.getElementById('modalName').textContent = act.name;
-      document.getElementById('modalDate').textContent = longDate(key);
-      const s=minutesOf(act.start), e=minutesOf(act.end);
-      document.getElementById('modalTime').textContent  = act.start+' – '+act.end;
-      document.getElementById('modalDur').textContent   = fmtDuration(s,e);
-
-      const notifyRow = document.getElementById('modalNotifyRow');
-      const notifyLbl = document.getElementById('modalNotify');
-      const no = NOTIFY_OPTS.find(o=>o.v===String(act.notify||''));
-      if(no && no.short){
-        notifyRow.style.display='flex';
-        notifyLbl.textContent = no.label;
-      } else {
-        notifyRow.style.display='none';
+    function buildList(){
+      const acts = sortedActs(_key);
+      if(!acts.length){
+        listEl.innerHTML='<div class="modal-empty">Brak wydarzeń w tym dniu</div>';
+        return;
       }
+      listEl.innerHTML = acts.map(act=>{
+        const s=minutesOf(act.start), e=minutesOf(act.end);
+        const notifyOpt = NOTIFY_OPTS.find(o=>o.v===String(act.notify||''));
+        const notifyTxt = notifyOpt&&notifyOpt.short ? ' · 🔔 '+notifyOpt.label : '';
+        return `<div class="modal-ev-card">
+          <div class="modal-ev-strip" style="background:${act.color||ACT_COLOR}"></div>
+          <div class="modal-ev-body">
+            <div class="modal-ev-name">${escapeHtml(act.name)}</div>
+            <div class="modal-ev-meta">
+              <span>🕐 ${act.start} – ${act.end}</span>
+              <span>${fmtDuration(s,e)}</span>
+              ${notifyTxt?'<span>'+notifyTxt+'</span>':''}
+            </div>
+          </div>
+          <button class="modal-ev-del" data-delid="${act.id}" title="Usuń">×</button>
+        </div>`;
+      }).join('');
+
+      listEl.querySelectorAll('.modal-ev-del').forEach(btn=>{
+        btn.addEventListener('click',()=>{
+          if(confirm('Usunąć wydarzenie?')){
+            const d=getDay(_key);
+            d.activities=d.activities.filter(a=>a.id!==btn.dataset.delid);
+            saveData(); render(); buildList();
+          }
+        });
+      });
+    }
+
+    window.openDayModal = function(key){
+      const acts = sortedActs(key);
+      if(!acts.length){ openDay(key); return; } // brak wydarzeń → otwórz planer
+      _key = key;
+      dateEl.textContent = longDate(key);
+      buildList();
       overlay.classList.remove('hidden');
     };
 
-    function closeModal(){ overlay.classList.add('hidden'); _key=null; _actId=null; }
+    function closeModal(){ overlay.classList.add('hidden'); _key=null; }
     closeBtn.addEventListener('click', closeModal);
     overlay.addEventListener('click', e=>{ if(e.target===overlay) closeModal(); });
     document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
 
-    delBtn.addEventListener('click',()=>{
-      if(!_key||!_actId) return;
-      if(confirm('Usunąć wydarzenie?')){
-        const d=getDay(_key);
-        d.activities=d.activities.filter(a=>a.id!==_actId);
-        saveData(); closeModal(); render();
-      }
-    });
-
-    goDayBtn.addEventListener('click',()=>{
-      const k=_key; closeModal(); openDay(k);
-    });
+    goDayBtn.addEventListener('click',()=>{ const k=_key; closeModal(); openDay(k); });
   })();
 
   /* ====== AKCJE ====== */
