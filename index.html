@@ -53,8 +53,19 @@
     -webkit-font-smoothing:antialiased;
   }
   .app{max-width:900px;margin:0 auto;padding:20px 14px 80px}
-  h1{font-size:1.45rem;font-weight:700;text-align:center;margin-bottom:2px;letter-spacing:-.3px}
-  .subtitle{text-align:center;color:var(--muted);font-size:.85rem;margin-bottom:18px}
+  .app-header{
+    display:flex;align-items:center;justify-content:center;
+    margin-bottom:20px;
+  }
+  .app-title-tile{
+    background:#1c1c1e;border-radius:14px;
+    padding:10px 24px;display:inline-flex;align-items:center;
+    box-shadow:0 2px 12px rgba(0,0,0,.18);
+  }
+  h1{
+    font-size:1.5rem;font-weight:800;letter-spacing:.5px;
+    color:var(--red);margin:0;text-transform:uppercase;
+  }
 
   /* ===== PRZEŁĄCZNIK WIDOKU ===== */
   .view-switch{
@@ -337,13 +348,6 @@
     font-size:.85rem;font-weight:700;font-family:inherit;
   }
   .pwa-install-bar .install:hover{background:var(--blue-soft)}
-  .pwa-running-badge{
-    display:none;align-items:center;gap:6px;
-    background:var(--green-soft);color:var(--green-hover);
-    border-radius:20px;padding:3px 12px;font-size:.72rem;font-weight:600;
-    border:1px solid var(--green);margin:0 auto 14px;width:fit-content;
-  }
-  .pwa-running-badge.show{display:flex}
 
   @media (max-width:680px){
     h1{font-size:1.2rem}
@@ -357,12 +361,10 @@
 </head>
 <body>
 <div class="app">
-  <h1>📅 Kalendarz-Dziennik</h1>
-  <p class="subtitle">Planuj aktywności i prowadź swój dziennik</p>
-  <!-- Widoczne gdy app działa ze skrótu na pulpicie -->
-  <div class="pwa-running-badge" id="pwaBadge">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-    Aplikacja zainstalowana
+  <div class="app-header">
+    <div class="app-title-tile">
+      <h1>Kalendarz</h1>
+    </div>
   </div>
 
   <div class="view-switch" id="viewSwitch">
@@ -1138,14 +1140,8 @@ function parseActivityVoice(text){
   const bar      = document.getElementById('pwaBar');
   const btnYes   = document.getElementById('pwaBarInstall');
   const btnNo    = document.getElementById('pwaBarDismiss');
-  const badge    = document.getElementById('pwaBadge');
   let deferredPrompt = null;
 
-  // Pokaż badge jeśli uruchomiono ze skrótu
-  if(window.matchMedia('(display-mode: standalone)').matches ||
-     window.navigator.standalone === true){
-    badge.classList.add('show');
-  }
 
   // Chrome / Edge / Android — beforeinstallprompt
   window.addEventListener('beforeinstallprompt', e => {
@@ -1181,7 +1177,6 @@ function parseActivityVoice(text){
   // Po instalacji schowaj pasek
   window.addEventListener('appinstalled', () => {
     bar.classList.add('hidden');
-    badge.classList.add('show');
     deferredPrompt = null;
     console.log('[PWA] Zainstalowano!');
   });
