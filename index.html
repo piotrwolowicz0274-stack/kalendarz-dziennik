@@ -714,7 +714,7 @@ const VN = (function(){
 
   const STORE_KEY = "voice-notes-v1";
   const APIKEY_KEY = "claude-api-key";
-  const MODEL = "claude-sonnet-4-20250514";
+  const MODEL = "claude-sonnet-4-6";   // poprzedni claude-sonnet-4-20250514 został wycofany (404)
   const MAX_REC_MS = 125000;            // bezpiecznik ~2 min
   const CATEGORIES = [
     "📋 Zadania","📅 Spotkania","📈 Trading",
@@ -747,9 +747,17 @@ const VN = (function(){
   let elBtn, elTimer, elStatus, elTranscript, elActions, elMicArea, elFallback,
       elFallbackText, elProcessing, elFilter, elList, elSettings;
 
-  /* ========== ROZPOZNAWANIE MOWY ========== */
-  const voiceN = new VoiceInput("pl-PL");
-  let recording=false, processing=false, recBuffer="", lastInterim="", recStart=0, timerInt=null;
+  /* ========== ROZPOZNAWANIE MOWY ==========
+     Każda sesja rozpoznawania może zostać zakończona przez przeglądarkę po ciszy.
+     Przy długim nagraniu wznawiamy sesję; aby UNIKNĄĆ DUBLOWANIA słów,
+     w obrębie sesji ZAWSZE odbudowujemy pełny tekst z wszystkich wyników
+     (a nie doklejamy fragmentów), a po zakończeniu sesji jej finalny tekst
+     dołączamy JEDEN raz do bufora `committed`. */
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const speechSupported = !!SR;
+  let rec = null;
+  let recording=false, processing=false, finalizing=false;
+  let committed="", sessionFinal="", lastInterim="", recStart=0, timerInt=null;
 
   function setStatus(txt, cls){
     if(!elStatus) return;
@@ -766,38 +774,55 @@ const VN = (function(){
     const s=Math.floor((Date.now()-recStart)/1000);
     elTimer.textContent=Math.floor(s/60)+":"+pad(s%60);
   }
+  function liveText(){ return (committed+" "+sessionFinal+" "+lastInterim).replace(/\s+/g," ").trim(); }
 
   function startRec(){
-    if(recording || processing) return;
-    recording=true; finalizing=false; recBuffer=""; lastInterim=""; recStart=Date.now();
+    if(recording || processing || !speechSupported) return;
+    recording=true; finalizing=false;
+    committed=""; sessionFinal=""; lastInterim=""; recStart=Date.now();
     elBtn.classList.add("recording");
     elTimer.classList.add("show"); updateTimer();
     timerInt=setInterval(()=>{ updateTimer(); if(Date.now()-recStart>=MAX_REC_MS) stopRec(); },500);
     setStatus("🎤 Słucham… mów teraz", "live");
     showTranscript("");
-    listenLoop();
+    beginSession();
   }
 
-  function listenLoop(){
-    voiceN.listen({
-      continuous:true,
-      onInterim:t=>{ lastInterim=t; showTranscript((recBuffer+" "+t).trim()); },
-      onFinal:t=>{ recBuffer=(recBuffer+" "+t).trim(); lastInterim=""; showTranscript(recBuffer); },
-      onEnd:()=>{
-        if(recording){
-          // przeglądarka kończy po ciszy — wznów, by obsłużyć dłuższe nagrania
-          if(Date.now()-recStart < MAX_REC_MS){ try{ listenLoop(); }catch(e){ finalizeRec(); } }
-          else stopRec();
-        }
-      },
-      onError:msg=>{
-        if(/dostępu do mikrofonu|nie obsługuje/i.test(msg)){
-          recording=false; cleanupRecUI();
-          setStatus("⚠ "+msg, "warn");
-        }
-        // inne błędy (np. brak mowy) — pętla onEnd wznowi nasłuch
+  function beginSession(){
+    rec = new SR();
+    rec.lang="pl-PL";
+    rec.continuous=true;
+    rec.interimResults=true;
+    rec.maxAlternatives=1;
+    sessionFinal=""; lastInterim="";
+    rec.onresult = e=>{
+      // odbuduj CAŁY tekst tej sesji od zera — zero dublowania
+      let fin="", inter="";
+      for(let i=0;i<e.results.length;i++){
+        const t=e.results[i][0].transcript;
+        if(e.results[i].isFinal) fin+=t; else inter+=t;
       }
-    });
+      sessionFinal=fin; lastInterim=inter;
+      showTranscript(liveText());
+    };
+    rec.onerror = ev=>{
+      if(ev.error==="not-allowed" || ev.error==="service-not-allowed"){
+        recording=false; cleanupRecUI();
+        setStatus("⚠ Brak dostępu do mikrofonu. Zezwól w ustawieniach przeglądarki.","warn");
+      }
+      // pozostałe błędy (np. no-speech) — onend wznowi nasłuch
+    };
+    rec.onend = ()=>{
+      // domknij tekst tej sesji do bufora (jeden raz)
+      committed = (committed+" "+sessionFinal).replace(/\s+/g," ").trim();
+      sessionFinal=""; lastInterim="";
+      if(recording && Date.now()-recStart < MAX_REC_MS){
+        try{ beginSession(); return; }catch(e){}
+      }
+      recording=false; cleanupRecUI();
+      finalizeRec();
+    };
+    try{ rec.start(); }catch(e){ /* już wystartowane — ignoruj */ }
   }
 
   function cleanupRecUI(){
@@ -808,17 +833,15 @@ const VN = (function(){
 
   function stopRec(){
     if(!recording) return;
-    recording=false;
+    recording=false;            // sygnał dla onend, by zakończyć i przetworzyć
     cleanupRecUI();
-    try{ voiceN.stop(); }catch(e){}
-    finalizeRec();
+    try{ if(rec) rec.stop(); }catch(e){ finalizeRec(); }
   }
 
-  let finalizing=false;
   function finalizeRec(){
     if(finalizing) return; finalizing=true;
-    const transcript=(recBuffer+" "+lastInterim).trim();
-    recBuffer=""; lastInterim="";
+    const transcript=(committed+" "+lastInterim).replace(/\s+/g," ").trim();
+    committed=""; sessionFinal=""; lastInterim="";
     if(!transcript){
       setStatus("Nie wykryto mowy. Spróbuj ponownie.","warn");
       finalizing=false; return;
@@ -1098,7 +1121,7 @@ const VN = (function(){
     elSettings.addEventListener("click",promptApiKey);
     refreshSettingsBadge();
 
-    if(voiceN.supported){
+    if(speechSupported){
       elBtn.addEventListener("click",()=>{ recording ? stopRec() : startRec(); });
     } else {
       setupFallback();
