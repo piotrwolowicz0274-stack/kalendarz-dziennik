@@ -226,6 +226,65 @@
   .saved-flash{font-size:.8rem;color:var(--teal-hover);font-weight:800;opacity:0;transition:opacity .3s}
   .saved-flash.show{opacity:1}
 
+  /* ===== MIKROFON ===== */
+  .mic-btn{
+    flex:0 0 auto;width:38px;height:38px;border-radius:50%;
+    border:2px solid var(--border-strong);background:var(--card);
+    color:var(--muted);cursor:pointer;display:flex;align-items:center;
+    justify-content:center;transition:all .15s;padding:0;
+  }
+  .mic-btn:hover{border-color:var(--accent);color:var(--accent)}
+  .mic-btn.recording{
+    background:#ef4444;border-color:#ef4444;color:#fff;
+    animation:mic-pulse 1s ease-in-out infinite;
+  }
+  .mic-btn.unsupported{opacity:.35;cursor:not-allowed}
+  @keyframes mic-pulse{
+    0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.5)}
+    50%{box-shadow:0 0 0 8px rgba(239,68,68,0)}
+  }
+  .field-row{display:flex;gap:8px;align-items:center}
+  .field-row input,.field-row select{flex:1;min-width:0}
+  .mic-preview{
+    font-size:.78rem;color:var(--muted);font-style:italic;
+    min-height:18px;margin-top:4px;padding:0 2px;
+    transition:color .2s;
+  }
+  .mic-preview.active{color:var(--accent)}
+  .voice-dictate-wrap{
+    background:var(--teal-soft);border:2px solid var(--teal);
+    border-radius:12px;padding:12px 14px;margin-bottom:12px;
+    display:flex;flex-direction:column;gap:8px;
+  }
+  .voice-dictate-wrap label{
+    font-size:.78rem;font-weight:800;color:var(--teal-hover);
+  }
+  .voice-dictate-row{display:flex;gap:8px;align-items:center}
+  .voice-result-box{
+    background:var(--card);border:2px solid var(--border);border-radius:9px;
+    padding:9px 12px;font-size:.82rem;color:var(--text);min-height:36px;
+    flex:1;font-style:italic;color:var(--muted);
+  }
+  .voice-result-box.filled{font-style:normal;color:var(--text)}
+  .voice-parsed{
+    display:none;flex-direction:column;gap:4px;
+    background:var(--card);border:2px solid var(--teal);
+    border-radius:9px;padding:10px 12px;font-size:.8rem;
+  }
+  .voice-parsed.show{display:flex}
+  .voice-parsed-row{display:flex;gap:6px;align-items:center}
+  .voice-parsed-label{font-weight:800;color:var(--muted);min-width:60px}
+  .voice-parsed-val{color:var(--text);font-weight:700}
+  .voice-apply-btn{
+    border:none;background:var(--teal);color:#fff;
+    padding:7px 14px;border-radius:9px;cursor:pointer;
+    font-size:.8rem;font-weight:800;font-family:inherit;
+    margin-top:4px;align-self:flex-end;
+  }
+  .diary-mic-row{display:flex;gap:10px;align-items:flex-start;flex:1}
+  .diary-mic-row textarea{flex:1}
+  .diary-mic-col{display:flex;flex-direction:column;gap:8px;padding-top:2px}
+
   /* ===== PRZYCISK INSTALACJI PWA ===== */
   .pwa-install-bar{
     position:fixed;bottom:0;left:0;right:0;z-index:999;
@@ -319,10 +378,145 @@
 </div>
 
 <script>
+/* ========================================================
+   VOICE INPUT — Web Speech API
+   ======================================================== */
+class VoiceInput {
+  constructor(lang='pl-PL'){
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    this.supported = !!SR;
+    if(!this.supported) return;
+    this.rec = new SR();
+    this.rec.lang = lang;
+    this.rec.maxAlternatives = 1;
+  }
+  listen({ continuous=false, onInterim, onFinal, onEnd, onError }={}){
+    if(!this.supported){ onError?.('Twoja przeglądarka nie obsługuje rozpoznawania mowy.'); return; }
+    this.rec.continuous = continuous;
+    this.rec.interimResults = !!onInterim;
+    this.rec.onresult = e => {
+      let interim='', final='';
+      for(let i=e.resultIndex; i<e.results.length; i++){
+        const t = e.results[i][0].transcript;
+        if(e.results[i].isFinal) final += t;
+        else interim += t;
+      }
+      if(interim) onInterim?.(interim);
+      if(final)   onFinal?.(final);
+    };
+    this.rec.onerror = e => onError?.(e.error==='not-allowed'
+      ? 'Brak dostępu do mikrofonu. Zezwól w ustawieniach przeglądarki.'
+      : 'Błąd mikrofonu: '+e.error);
+    this.rec.onend = () => onEnd?.();
+    this.rec.start();
+  }
+  stop(){ try{ this.rec?.stop(); }catch(e){} }
+}
+
+/* ========================================================
+   PARSER POLSKICH KOMEND GŁOSOWYCH
+   ======================================================== */
+const _VI = (()=>{
+  const H = {
+    'zero':0,'północ':0,'pierwsza':1,'druga':2,'trzecia':3,'czwarta':4,
+    'piąta':5,'szósta':6,'siódma':7,'ósma':8,'dziewiąta':9,'dziesiąta':10,
+    'jedenasta':11,'dwunasta':12,'trzynasta':13,'czternasta':14,'piętnasta':15,
+    'szesnasta':16,'siedemnasta':17,'osiemnasta':18,'dziewiętnasta':19,
+    'dwudziesta':20,'dwudziesta pierwsza':21,'dwudziesta druga':22,'dwudziesta trzecia':23
+  };
+  const M = {
+    'zero':0,'pięć':5,'dziesięć':10,'kwadrans':15,'piętnaście':15,
+    'dwadzieścia':20,'dwadzieścia pięć':25,'pół':30,'trzydzieści':30,
+    'trzydzieści pięć':35,'czterdzieści':40,'czterdzieści pięć':45,
+    'pięćdziesiąt':50,'pięćdziesiąt pięć':55
+  };
+  const CAT_MAP = {
+    'praca':['praca','pracy','pracę','służbowe'],'Sport':['sport','sportu','trening','siłownia','bieganie','rower','basen'],
+    'Nauka':['nauka','nauki','uczenie','kurs','lekcja','szkoła','studia'],
+    'Spotkanie':['spotkanie','spotkania','meeting','zebranie','wizyta'],'Inne':[]
+  };
+  const PAD = n => String(n).padStart(2,'0');
+
+  function extractTime(text){
+    // cyfry: "10:30", "10.30", "1030"
+    let m = text.match(/\b(\d{1,2})[:\.](\d{2})\b/);
+    if(m) return PAD(m[1])+':'+PAD(m[2]);
+    m = text.match(/\b([01]?\d|2[0-3])(\d{2})\b/);
+    if(m) return PAD(m[1])+':'+PAD(m[2]);
+    // słowa — godziny dwuczłonowe najpierw
+    const sortedH = Object.keys(H).sort((a,b)=>b.length-a.length);
+    for(const hName of sortedH){
+      if(text.includes(hName)){
+        const after = text.slice(text.indexOf(hName)+hName.length).trim();
+        const sortedM = Object.keys(M).sort((a,b)=>b.length-a.length);
+        for(const mName of sortedM){
+          if(after.startsWith(mName)) return PAD(H[hName])+':'+PAD(M[mName]);
+        }
+        return PAD(H[hName])+':00';
+      }
+    }
+    return null;
+  }
+
+  function extractAllTimes(text){
+    const times=[];
+    let s=text;
+    for(let i=0;i<2;i++){
+      const t=extractTime(s); if(!t) break;
+      times.push(t);
+      // usuń dopasowany fragment żeby znaleźć drugi czas
+      const sortedH=Object.keys(H).sort((a,b)=>b.length-a.length);
+      for(const hName of sortedH){
+        const idx=s.indexOf(hName);
+        if(idx!==-1){ s=s.slice(idx+hName.length); break; }
+      }
+      const dm=s.match(/\b(\d{1,2})[:\.](\d{2})\b/);
+      if(dm) s=s.slice(s.indexOf(dm[0])+dm[0].length);
+    }
+    return times;
+  }
+
+  function extractCategory(text){
+    const lo=text.toLowerCase();
+    for(const [cat, words] of Object.entries(CAT_MAP)){
+      if(words.some(w=>lo.includes(w))) return cat;
+    }
+    return 'Inne';
+  }
+
+  function extractName(text, cat, times){
+    let s=text.toLowerCase();
+    // usuń słowa kategorii
+    const catWords = Object.values(CAT_MAP).flat();
+    catWords.forEach(w=>{ s=s.replace(new RegExp('\\b'+w+'\\b','gi'),''); });
+    // usuń godziny (słowne i cyfrowe)
+    Object.keys(H).sort((a,b)=>b.length-a.length).forEach(h=>{ s=s.replace(new RegExp('\\b'+h+'\\b','gi'),''); });
+    Object.keys(M).sort((a,b)=>b.length-a.length).forEach(m=>{ s=s.replace(new RegExp('\\b'+m+'\\b','gi'),''); });
+    s=s.replace(/\b(\d{1,2})[:\.](\d{2})\b/g,'');
+    s=s.replace(/\b(od|do|godzina|godz|przez)\b/gi,'');
+    s=s.replace(/\s+/g,' ').trim();
+    // Capitalize
+    return s.charAt(0).toUpperCase()+s.slice(1) || 'Aktywność';
+  }
+
+  return { extractTime, extractAllTimes, extractCategory, extractName };
+})();
+
+function parseActivityVoice(text){
+  const times = _VI.extractAllTimes(text.toLowerCase());
+  const cat   = _VI.extractCategory(text);
+  const name  = _VI.extractName(text, cat, times);
+  return { name, cat, start: times[0]||'08:00', end: times[1]||'09:00' };
+}
+
+/* ======================================================== */
+
 (function(){
   "use strict";
 
   /* ====== STAŁE ====== */
+  const MIC_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>`;
+  const voice = new VoiceInput('pl-PL');
   const MONTHS = ["Styczeń","Luty","Marzec","Kwiecień","Maj","Czerwiec","Lipiec","Sierpień","Wrzesień","Październik","Listopad","Grudzień"];
   const MONTHS_GEN = ["stycznia","lutego","marca","kwietnia","maja","czerwca","lipca","sierpnia","września","października","listopada","grudnia"];
   const WEEKDAYS = ["Pon","Wt","Śr","Czw","Pt","Sob","Nie"];
@@ -520,9 +714,28 @@
             <button class="btn" id="addActBtn">+ Dodaj aktywność</button>
           </div>
           <div class="form hidden" id="actForm">
+            <!-- SEKCJA: Dyktuj głosem całą aktywność -->
+            <div class="voice-dictate-wrap">
+              <label>🎤 Powiedz całą aktywność jednym zdaniem</label>
+              <div class="voice-dictate-row">
+                <div class="voice-result-box" id="voiceResultBox">np. „Spotkanie z klientem, praca, dziesiąta, dwunasta"</div>
+                <button class="mic-btn" id="micDictateBtn" title="Dyktuj aktywność głosem">${MIC_SVG}</button>
+              </div>
+              <div class="voice-parsed" id="voiceParsed">
+                <div class="voice-parsed-row"><span class="voice-parsed-label">Nazwa:</span><span class="voice-parsed-val" id="vpName"></span></div>
+                <div class="voice-parsed-row"><span class="voice-parsed-label">Kategoria:</span><span class="voice-parsed-val" id="vpCat"></span></div>
+                <div class="voice-parsed-row"><span class="voice-parsed-label">Godziny:</span><span class="voice-parsed-val" id="vpTime"></span></div>
+                <button class="voice-apply-btn" id="voiceApplyBtn">✓ Wstaw do formularza</button>
+              </div>
+            </div>
+            <!-- pola ręczne -->
             <div class="field">
               <label>Nazwa aktywności</label>
-              <input type="text" id="actName" placeholder="np. Spotkanie zespołu">
+              <div class="field-row">
+                <input type="text" id="actName" placeholder="np. Spotkanie zespołu">
+                <button class="mic-btn" id="micNameBtn" title="Dyktuj nazwę">${MIC_SVG}</button>
+              </div>
+              <div class="mic-preview" id="prevName"></div>
             </div>
             <div class="field">
               <label>Kategoria</label>
@@ -550,7 +763,14 @@
           <div class="panel-head">
             <div><h2>Dziennik</h2><div class="panel-date">${longDate(selectedKey)}</div></div>
           </div>
-          <textarea class="diary-area" id="diaryArea" placeholder="Jak minął dzień? Zapisz swoje myśli...">${escapeHtml(day.diary)}</textarea>
+          <div class="diary-mic-row">
+            <textarea class="diary-area" id="diaryArea" placeholder="Jak minął dzień? Zapisz swoje myśli...">${escapeHtml(day.diary)}</textarea>
+            <div class="diary-mic-col">
+              <button class="mic-btn" id="micDiaryBtn" title="Dyktuj wpis głosem" style="width:44px;height:44px">${MIC_SVG}</button>
+              <div style="font-size:.62rem;font-weight:700;color:var(--muted);text-align:center;line-height:1.2">Mów</div>
+            </div>
+          </div>
+          <div class="mic-preview" id="prevDiary"></div>
           <div class="diary-foot">
             <span class="char-count" id="charCount"></span>
             <div style="display:flex;align-items:center;gap:12px">
@@ -571,8 +791,48 @@
       setTimeout(()=>f.classList.remove("show"),1500);
     });
 
+    // mikrofon — dziennik
+    setupMicBtn({
+      btnId:'micDiaryBtn', prevId:'prevDiary',
+      continuous:true,
+      onFinal: txt => {
+        const sep = ta.value && !ta.value.endsWith(' ') && !ta.value.endsWith('\n') ? ' ' : '';
+        ta.value += sep + txt;
+        upd();
+      }
+    });
+
     setupActivityForm(area);
     renderTimeline();
+  }
+
+  /* ---------- helper: podpina mic-btn do pola ---------- */
+  function setupMicBtn({ btnId, prevId, inputId, continuous=false, onFinal }){
+    const btn=document.getElementById(btnId);
+    const prev=prevId?document.getElementById(prevId):null;
+    const inp=inputId?document.getElementById(inputId):null;
+    if(!btn) return;
+    if(!voice.supported){ btn.classList.add('unsupported'); btn.title='Brak wsparcia mikrofonu w tej przeglądarce'; return; }
+
+    let active=false;
+    btn.addEventListener('click',()=>{
+      if(active){ voice.stop(); return; }
+      active=true; btn.classList.add('recording');
+      if(prev){ prev.textContent='🎤 Słucham…'; prev.classList.add('active'); }
+      voice.listen({
+        continuous,
+        onInterim: t=>{ if(prev){ prev.textContent=t; prev.classList.add('active'); } },
+        onFinal: t=>{
+          if(inp) inp.value += (inp.value&&!inp.value.endsWith(' ')?' ':'')+t;
+          if(prev){ prev.textContent='✓ '+t; prev.classList.remove('active'); }
+          onFinal?.(t);
+        },
+        onEnd:()=>{ active=false; btn.classList.remove('recording');
+          setTimeout(()=>{ if(prev) prev.textContent=''; },2000); },
+        onError: msg=>{ active=false; btn.classList.remove('recording');
+          if(prev){ prev.textContent='⚠ '+msg; prev.classList.remove('active'); } }
+      });
+    });
   }
 
   function setupActivityForm(area){
@@ -590,8 +850,58 @@
     });
 
     const updDur=()=>durBadge.textContent=fmtDuration(minutesOf(startI.value),minutesOf(endI.value));
-    startI.addEventListener("input",updDur); endI.addEventListener("input",updDur); updDur();
+    startI.addEventListener("input",updDur); endI.addEventListener("input",updDur);
 
+    // mikrofon — pole nazwy
+    setupMicBtn({ btnId:'micNameBtn', prevId:'prevName', inputId:'actName' });
+
+    // mikrofon — dyktuj całą aktywność (smart parser)
+    const resultBox   = document.getElementById('voiceResultBox');
+    const parsedBox   = document.getElementById('voiceParsed');
+    const vpName      = document.getElementById('vpName');
+    const vpCat       = document.getElementById('vpCat');
+    const vpTime      = document.getElementById('vpTime');
+    const micDictate  = document.getElementById('micDictateBtn');
+    const applyBtn    = document.getElementById('voiceApplyBtn');
+    let lastParsed    = null;
+
+    if(voice.supported){
+      let activeD=false;
+      micDictate.addEventListener('click',()=>{
+        if(activeD){ voice.stop(); return; }
+        activeD=true; micDictate.classList.add('recording');
+        resultBox.textContent='🎤 Słucham…'; resultBox.classList.remove('filled');
+        parsedBox.classList.remove('show');
+        voice.listen({
+          continuous:false,
+          onInterim: t=>{ resultBox.textContent=t; },
+          onFinal: t=>{
+            resultBox.textContent='"'+t+'"'; resultBox.classList.add('filled');
+            lastParsed=parseActivityVoice(t);
+            vpName.textContent=lastParsed.name;
+            vpCat.textContent=lastParsed.cat;
+            vpTime.textContent=lastParsed.start+' – '+lastParsed.end;
+            parsedBox.classList.add('show');
+          },
+          onEnd:()=>{ activeD=false; micDictate.classList.remove('recording'); },
+          onError: msg=>{ activeD=false; micDictate.classList.remove('recording'); resultBox.textContent='⚠ '+msg; }
+        });
+      });
+      applyBtn.addEventListener('click',()=>{
+        if(!lastParsed) return;
+        document.getElementById('actName').value  = lastParsed.name;
+        const catSel=document.getElementById('actCat');
+        [...catSel.options].forEach(o=>{ if(o.value===lastParsed.cat) o.selected=true; });
+        startI.value=lastParsed.start; endI.value=lastParsed.end; updDur();
+        parsedBox.classList.remove('show');
+        resultBox.textContent='✓ Wstawiono do formularza'; resultBox.classList.remove('filled');
+      });
+    } else {
+      micDictate.classList.add('unsupported');
+      micDictate.title='Brak wsparcia mikrofonu';
+    }
+
+    updDur(); // inicjalizacja
     document.getElementById("addActBtn").addEventListener("click",()=>form.classList.toggle("hidden"));
     document.getElementById("cancelActBtn").addEventListener("click",()=>form.classList.add("hidden"));
     document.getElementById("saveActBtn").addEventListener("click",()=>{
