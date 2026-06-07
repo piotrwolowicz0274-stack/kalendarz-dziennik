@@ -6,7 +6,7 @@
      • Reszta żądań GET                   → Network First + cache fallback
    ======================================================== */
 
-const CACHE_NAME  = 'dziennik-v4';
+const CACHE_NAME  = 'dziennik-v5';
 const SHELL_URLS  = [
   './',
   './index.html',
@@ -45,8 +45,16 @@ self.addEventListener('fetch', event => {
   const isFont = url.hostname.includes('fonts.googleapis.com') ||
                  url.hostname.includes('fonts.gstatic.com');
 
-  if (isFont) {
-    /* Google Fonts — Network First, cache fallback */
+  /* Czy to żądanie głównej aplikacji (HTML)? Takie ZAWSZE bierzemy z sieci,
+     żeby po wgraniu nowej wersji na GitHub użytkownik od razu ją dostawał.
+     Cache służy tylko jako zapas offline. */
+  const isAppShell = request.mode === 'navigate' ||
+                     url.pathname.endsWith('/') ||
+                     url.pathname.endsWith('/index.html') ||
+                     url.pathname.endsWith('index.html');
+
+  if (isFont || isAppShell) {
+    /* Network First — najpierw sieć, cache jako fallback (offline) */
     event.respondWith(
       fetch(request)
         .then(res => {
@@ -56,12 +64,14 @@ self.addEventListener('fetch', event => {
           }
           return res;
         })
-        .catch(() => caches.match(request))
+        .catch(() =>
+          caches.match(request).then(c => c || caches.match('./index.html'))
+        )
     );
     return;
   }
 
-  /* Wszystko inne — Cache First, sieć jako zapasowa */
+  /* Pozostałe zasoby (ikony, manifest itp.) — Cache First, sieć jako zapasowa */
   event.respondWith(
     caches.match(request).then(cached => {
       if (cached) return cached;
@@ -72,7 +82,6 @@ self.addEventListener('fetch', event => {
         }
         return res;
       }).catch(() => {
-        /* Offline fallback — zwróć główną stronę dla nawigacji */
         if (request.mode === 'navigate') return caches.match('./index.html');
       });
     })
