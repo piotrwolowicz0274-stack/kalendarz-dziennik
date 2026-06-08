@@ -786,7 +786,8 @@ const VN = (function(){
     while(changed && guard++<60){
       changed=false;
       for(let i=0;i<words.length && !changed;i++){
-        const maxK=Math.min(Math.floor((words.length-i)/2),8);
+        // blok powtórzenia może być długim zdaniem (Android powtarza całe zdania)
+        const maxK=Math.min(Math.floor((words.length-i)/2),60);
         for(let k=maxK;k>=1;k--){
           let dup=true;
           for(let j=0;j<k;j++){
@@ -800,11 +801,13 @@ const VN = (function(){
   }
 
   // Sklej dwa fragmenty usuwając nakładające się słowa na styku.
+  // BEZ limitu długości — Android zwraca narastająco całe długie zdania,
+  // gdzie nakładka bywa dłuższa niż kilkanaście słów.
   function stitch(a,b){
     a=String(a).trim(); b=String(b).trim();
     if(!a) return b; if(!b) return a;
     const aw=a.split(/\s+/), bw=b.split(/\s+/);
-    const max=Math.min(aw.length,bw.length,15);
+    const max=Math.min(aw.length,bw.length);
     for(let k=max;k>=1;k--){
       let ok=true;
       for(let j=0;j<k;j++){ if(normWord(aw[aw.length-k+j])!==normWord(bw[j])){ ok=false; break; } }
