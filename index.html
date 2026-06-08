@@ -529,7 +529,7 @@
       <div class="cat-filter" id="catFilter"></div>
       <div class="notes-list" id="notesList"></div>
       <div style="text-align:center;font-size:.7rem;color:var(--muted);padding:6px 0 4px">
-        Moduł notatek — wersja 6
+        Moduł notatek — wersja 7
       </div>
     </div>
   </div>
@@ -818,8 +818,31 @@ const VN = (function(){
     }
     return a+" "+b;
   }
+  // Wykryj "restart" całej wypowiedzi: ten sam długi początek pojawia się kilka
+  // razy (Android zaczyna od nowa, za każdym razem pełniej). Zostaw OSTATNIĄ,
+  // najpełniejszą wersję — ale tylko gdy wcześniejszy tekst jest w niej w ~60%
+  // zawarty (żeby nie wyciąć prawdziwie różnej treści, która zaczyna się tak samo).
+  function dedupeRestarts(text){
+    const words=String(text).split(/\s+/).filter(Boolean);
+    const N=4;
+    if(words.length < N*2) return words.join(" ");
+    const anchor=words.slice(0,N).map(normWord).join(" ");
+    const positions=[];
+    for(let i=0;i+N<=words.length;i++){ if(words.slice(i,i+N).map(normWord).join(" ")===anchor) positions.push(i); }
+    if(positions.length<2) return words.join(" ");
+    const lastStart=positions[positions.length-1];
+    const kept=words.slice(lastStart), earlier=words.slice(0,lastStart);
+    if(!earlier.length) return kept.join(" ");
+    const set=new Set(kept.map(normWord));
+    let contained=0; earlier.forEach(w=>{ if(set.has(normWord(w))) contained++; });
+    return (contained/earlier.length >= 0.6) ? kept.join(" ") : words.join(" ");
+  }
+  // Pełne czyszczenie transkrypcji: usuń powtórzone bloki + restarty całej wypowiedzi.
+  function cleanTranscript(text){
+    return collapseRepeats(dedupeRestarts(collapseRepeats(String(text).replace(/\s+/g," ").trim())));
+  }
   function liveText(){
-    return collapseRepeats((committed+" "+sessionFinal+" "+lastInterim).replace(/\s+/g," ").trim());
+    return cleanTranscript(committed+" "+sessionFinal+" "+lastInterim);
   }
 
   function startRec(){
@@ -888,9 +911,9 @@ const VN = (function(){
 
   function finalizeRec(){
     if(finalizing) return; finalizing=true;
-    // domknij ewentualną resztę sesji + usuń powtórzenia całych fraz
+    // domknij ewentualną resztę sesji + pełne czyszczenie (powtórzenia + restarty)
     const tail=(sessionFinal+" "+lastInterim).replace(/\s+/g," ").trim();
-    const transcript=collapseRepeats(stitch(committed, tail));
+    const transcript=cleanTranscript(stitch(committed, tail));
     committed=""; sessionFinal=""; lastInterim="";
     if(!transcript){
       setStatus("Nie wykryto mowy. Spróbuj ponownie.","warn");
