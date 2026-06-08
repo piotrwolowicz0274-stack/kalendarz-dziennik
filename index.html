@@ -150,6 +150,14 @@
     background:var(--card);border-radius:18px;padding:24px;
     max-width:360px;width:100%;box-shadow:0 12px 48px rgba(0,0,0,.22);
     animation:slideUp .2s ease;
+    max-height:88vh;display:flex;flex-direction:column;
+  }
+  .modal-header{flex:0 0 auto}
+  .modal-actions{flex:0 0 auto}
+  /* wspólny przewijany obszar: aktywności + notatki */
+  .modal-scroll{
+    flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
+    margin:0 -6px;padding:0 6px;
   }
   @keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
   .modal-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;gap:12px}
@@ -175,7 +183,7 @@
   .modal-info span{font-size:.74rem;color:var(--muted)}
   .modal-actions{display:flex;gap:8px;justify-content:flex-end}
   /* lista wydarzeń w modalu */
-  .modal-event-list{display:flex;flex-direction:column;gap:8px;max-height:55vh;overflow-y:auto}
+  .modal-event-list{display:flex;flex-direction:column;gap:8px}
   .modal-ev-card{
     display:flex;gap:0;border-radius:12px;overflow:hidden;
     box-shadow:0 1px 4px rgba(0,0,0,.08);
@@ -529,7 +537,7 @@
       <div class="cat-filter" id="catFilter"></div>
       <div class="notes-list" id="notesList"></div>
       <div style="text-align:center;font-size:.7rem;color:var(--muted);padding:6px 0 4px">
-        Moduł notatek — wersja 7
+        Moduł notatek — wersja 8
       </div>
     </div>
   </div>
@@ -544,10 +552,12 @@
       </div>
       <button class="modal-close" id="modalClose" aria-label="Zamknij">×</button>
     </div>
-    <div class="modal-event-list" id="modalEventList"></div>
-    <div class="modal-notes-section" id="modalNotesSection" style="display:none">
-      <div class="modal-notes-title">🎙️ Notatki głosowe</div>
-      <div id="modalNotesList"></div>
+    <div class="modal-scroll">
+      <div class="modal-event-list" id="modalEventList"></div>
+      <div class="modal-notes-section" id="modalNotesSection" style="display:none">
+        <div class="modal-notes-title">🎙️ Notatki głosowe</div>
+        <div id="modalNotesList"></div>
+      </div>
     </div>
     <div class="modal-actions" style="margin-top:16px">
       <button class="btn" id="modalGoDay">Otwórz planer dnia</button>
