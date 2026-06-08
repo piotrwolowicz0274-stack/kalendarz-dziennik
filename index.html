@@ -537,7 +537,7 @@
       <div class="cat-filter" id="catFilter"></div>
       <div class="notes-list" id="notesList"></div>
       <div style="text-align:center;font-size:.7rem;color:var(--muted);padding:6px 0 4px">
-        Moduł notatek — wersja 8
+        Moduł notatek — wersja 9
       </div>
     </div>
   </div>
@@ -561,6 +561,26 @@
     </div>
     <div class="modal-actions" style="margin-top:16px">
       <button class="btn" id="modalGoDay">Otwórz planer dnia</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: dodaj notatkę do kalendarza jako wydarzenie -->
+<div class="modal-overlay hidden" id="noteEventModal">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-header">
+      <div class="modal-titles"><div class="modal-name">📅 Dodaj do kalendarza</div></div>
+      <button class="modal-close" id="neClose" aria-label="Zamknij">×</button>
+    </div>
+    <div class="field"><label>Nazwa wydarzenia</label><input type="text" id="neName"></div>
+    <div class="field"><label>Data</label><input type="date" id="neDate"></div>
+    <div class="row2">
+      <div class="field"><label>Początek</label><input type="time" id="neStart" step="300"></div>
+      <div class="field"><label>Koniec</label><input type="time" id="neEnd" step="300"></div>
+    </div>
+    <div class="modal-actions" style="margin-top:8px">
+      <button class="btn ghost small" id="neCancel">Anuluj</button>
+      <button class="btn small" id="neSave">Dodaj do kalendarza</button>
     </div>
   </div>
 </div>
@@ -1099,6 +1119,7 @@ const VN = (function(){
           <div class="note-transcript">${esc(n.audioTranscript)}</div>
         </div>
         <div class="note-actions">
+          <button class="btn small" data-act="event">📅 Do kalendarza</button>
           <button class="btn ghost small" data-act="copy">📋 Kopiuj tekst</button>
           <button class="btn danger small" data-act="delete">🗑 Usuń</button>
         </div>
@@ -1122,6 +1143,11 @@ const VN = (function(){
     elList.querySelectorAll(".note-card").forEach(card=>{
       const id=card.dataset.id;
       card.querySelector("[data-toggle]").addEventListener("click",()=>card.classList.toggle("expanded"));
+      card.querySelector('[data-act="event"]').addEventListener("click",ev=>{
+        ev.stopPropagation();
+        const note=notes.find(n=>n.id===id); if(!note) return;
+        openNoteEvent(note, ev.currentTarget);
+      });
       card.querySelector('[data-act="copy"]').addEventListener("click",ev=>{
         ev.stopPropagation();
         const note=notes.find(n=>n.id===id); if(!note) return;
@@ -1170,6 +1196,39 @@ const VN = (function(){
     setStatus(getApiKey() ? "🔑 Klucz API zapisany." : "Klucz API usunięty.");
   }
 
+  /* ========== NOTATKA → WYDARZENIE W KALENDARZU ========== */
+  let neModal, neName, neDate, neStart, neEnd, nePendingBtn=null;
+  function neMinutes(hhmm){ const p=String(hhmm).split(":"); return (+p[0]||0)*60+(+p[1]||0); }
+  function neAddMin(hhmm, add){ let t=Math.min(neMinutes(hhmm)+add, 23*60+59); return pad(Math.floor(t/60))+":"+pad(t%60); }
+
+  function openNoteEvent(note, btn){
+    if(typeof window.addCalendarActivity!=="function"){ alert("Kalendarz jest niedostępny."); return; }
+    nePendingBtn=btn||null;
+    neName.value = note.title || "Wydarzenie";
+    neDate.value = note.linkedDate || dateKeyOf(new Date());
+    let start="09:00", end="10:00";
+    try{
+      // spróbuj wyłapać godzinę z treści notatki (parser z kalendarza)
+      const p = (typeof parseActivityVoice==="function") ? parseActivityVoice(note.audioTranscript||note.title||"") : null;
+      if(p && p.start){ start=p.start; end = (neMinutes(p.end)>neMinutes(p.start)) ? p.end : neAddMin(start,60); }
+    }catch(e){}
+    neStart.value=start; neEnd.value=end;
+    neModal.classList.remove("hidden");
+    setTimeout(()=>{ try{ neName.focus(); }catch(e){} }, 50);
+  }
+  function closeNoteEvent(){ neModal.classList.add("hidden"); nePendingBtn=null; }
+  function saveNoteEvent(){
+    const name=(neName.value||"").trim() || "Wydarzenie";
+    const date=neDate.value || dateKeyOf(new Date());
+    const start=neStart.value || "09:00";
+    let end=neEnd.value || "10:00";
+    if(neMinutes(end)<=neMinutes(start)) end=neAddMin(start,60);
+    window.addCalendarActivity(date, { name, start, end, cat:"Inne" });
+    const btn=nePendingBtn;
+    closeNoteEvent();
+    if(btn){ const o=btn.textContent; btn.textContent="✓ Dodano do kalendarza"; setTimeout(()=>{ btn.textContent=o; }, 1900); }
+  }
+
   /* ========== TRYB ZAPASOWY (brak Web Speech) ========== */
   function setupFallback(){
     elMicArea.style.display="none";
@@ -1203,6 +1262,18 @@ const VN = (function(){
 
     elSettings.addEventListener("click",promptApiKey);
     refreshSettingsBadge();
+
+    // modal "notatka → wydarzenie"
+    neModal=document.getElementById("noteEventModal");
+    neName=document.getElementById("neName");
+    neDate=document.getElementById("neDate");
+    neStart=document.getElementById("neStart");
+    neEnd=document.getElementById("neEnd");
+    document.getElementById("neClose").addEventListener("click",closeNoteEvent);
+    document.getElementById("neCancel").addEventListener("click",closeNoteEvent);
+    document.getElementById("neSave").addEventListener("click",saveNoteEvent);
+    neModal.addEventListener("click",e=>{ if(e.target===neModal) closeNoteEvent(); });
+    document.addEventListener("keydown",e=>{ if(e.key==="Escape" && !neModal.classList.contains("hidden")) closeNoteEvent(); });
 
     if(speechSupported){
       elBtn.addEventListener("click",()=>{ recording ? stopRec() : startRec(); });
@@ -1792,6 +1863,28 @@ const VN = (function(){
 
   // udostępnij odświeżanie kalendarza modułowi notatek (ikona 🎙️)
   window.refreshCalendar = render;
+
+  // mostek: moduł notatek tworzy aktywność w kalendarzu (notatka → wydarzenie)
+  window.addCalendarActivity = function(key, opts){
+    opts = opts || {};
+    const day = getDay(key);
+    const notify = opts.notify || "";
+    day.activities.push({
+      id: Date.now()+"-"+Math.random().toString(36).slice(2,7),
+      name: (opts.name||"Wydarzenie").trim(),
+      start: opts.start || "09:00",
+      end:   opts.end   || "10:00",
+      cat:   opts.cat   || "Inne",
+      color: ACT_COLOR,
+      notify: notify
+    });
+    day.activities.sort((a,b)=>minutesOf(a.start)-minutesOf(b.start));
+    saveData();
+    if(notify) requestNotifyPermission();
+    scheduleNotifications();
+    render();
+    return true;
+  };
 
   // Obsługa skrótu ?view=today z manifest.json shortcuts
   if(new URLSearchParams(location.search).get('view')==='today'){
