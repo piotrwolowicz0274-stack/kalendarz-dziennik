@@ -6,7 +6,7 @@
      • Reszta żądań GET                   → Network First + cache fallback
    ======================================================== */
 
-const CACHE_NAME  = 'dziennik-v5';
+const CACHE_NAME  = 'dziennik-v6';
 const SHELL_URLS  = [
   './',
   './index.html',
@@ -54,9 +54,12 @@ self.addEventListener('fetch', event => {
                      url.pathname.endsWith('index.html');
 
   if (isFont || isAppShell) {
-    /* Network First — najpierw sieć, cache jako fallback (offline) */
+    /* Network First — najpierw sieć, cache jako fallback (offline).
+       Dla głównej aplikacji wymuszamy 'reload', by OMINĄĆ cache HTTP/CDN
+       (GitHub Pages potrafi serwować stary index.html nawet mimo network-first). */
+    const netReq = isAppShell ? new Request(url.href, { cache: 'reload' }) : request;
     event.respondWith(
-      fetch(request)
+      fetch(netReq)
         .then(res => {
           if (res.ok) {
             const clone = res.clone();
